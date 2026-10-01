@@ -1,0 +1,26 @@
+# Secrets and local data
+config_local.py
+.env
+.env.*
+!.env.example
+data/
+uploads/
+outputs/
+work/
+*.log
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Frontend build and dependencies
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+frontend/tsconfig.tsbuildinfo
+
+# Local Vercel metadata
+.vercel/
