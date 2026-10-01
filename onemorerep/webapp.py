@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from datetime import date, time
 import logging
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,8 +52,14 @@ def health():
 async def check_mutation_origin(request:Request,call_next):
     if request.method in {"POST","PUT","PATCH","DELETE"}:
         origin=request.headers.get("origin")
-        if origin and origin not in config.CORS_ORIGINS:
-            return JSONResponse(status_code=403,content={"detail":"Request origin is not allowed."})
+        if origin:
+            parsed_origin=urlsplit(origin)
+            request_host=request.headers.get("host","").lower()
+            same_origin=(parsed_origin.scheme==request.url.scheme and
+                         parsed_origin.netloc.lower()==request_host and
+                         not parsed_origin.path and not parsed_origin.query and not parsed_origin.fragment)
+            if not same_origin and origin not in config.CORS_ORIGINS:
+                return JSONResponse(status_code=403,content={"detail":"Request origin is not allowed."})
     return await call_next(request)
 
 
