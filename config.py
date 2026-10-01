@@ -19,7 +19,7 @@ CORS_ORIGINS = [origin.strip() for origin in os.getenv(
 ).split(",") if origin.strip()]
 MEDIA_STORAGE = os.getenv("ONEMOREREP_MEDIA_STORAGE", "local").strip().lower()
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")).strip()
 SUPABASE_STORAGE_BUCKET = os.getenv("SUPABASE_STORAGE_BUCKET", "onemorerep-private").strip()
 
 MORNING_START = "05:00:00"

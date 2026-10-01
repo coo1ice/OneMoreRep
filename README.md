@@ -99,11 +99,11 @@ Before deploying, create a Supabase project and a **private** Storage bucket nam
 Configure these Vercel project environment variables for Production (and Preview if needed):
 
 - `ONEMOREREP_DB_HOST`, `ONEMOREREP_DB_PORT`, `ONEMOREREP_DB_USER`, `ONEMOREREP_DB_PASSWORD`, `ONEMOREREP_DB_NAME` for the hosted PostgreSQL database.
-- `ONEMOREREP_MEDIA_STORAGE=supabase`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `SUPABASE_STORAGE_BUCKET=onemorerep-private` for private image storage. Use the service role key only as a server environment variable; never add it to frontend `NEXT_PUBLIC_*` variables.
+- `ONEMOREREP_MEDIA_STORAGE=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and optionally `SUPABASE_STORAGE_BUCKET=onemorerep-private` for private image storage. Keep the secret key only as a server environment variable; never add it to frontend `NEXT_PUBLIC_*` variables.
 - `ONEMOREREP_COOKIE_SECURE=true` so sign-in cookies are sent only over HTTPS.
 - `ONEMOREREP_CORS_ORIGINS` set to the exact deployed site origin if frontend and API are later split across different domains. With the included same-origin `/api/*` routing, cross-origin requests are not needed.
 - `NEXT_PUBLIC_API_URL` can be omitted for the included same-origin routing. Set it to the API origin if the frontend is deployed separately.
 
-Use the PostgreSQL connection values from Supabase (a pooler connection is suitable for serverless use). The FastAPI startup initializes the schema on first connection. After the first deployment, register an account and promote it through the database or a one-time trusted administrative environment; do not expose local database credentials or `config_local.py` in the deployment.
+Use the PostgreSQL **Transaction pooler** values from Supabase for Vercel serverless use. The app disables Psycopg automatic prepared statements for compatibility with transaction pooling. The FastAPI startup initializes the schema on first connection. After the first deployment, register an account and promote it through the database or a one-time trusted administrative environment; do not expose local database credentials or `config_local.py` in the deployment.
 
 Vercel deployment still requires linking this folder to a Vercel project and signing in with a Vercel account. Once the Supabase project and private bucket are ready, add the environment variables above, then deploy from this folder using Vercel CLI or import the repository into Vercel.

@@ -7,7 +7,8 @@ import config
 def connect():
     return psycopg.connect(host=config.DB_HOST, port=config.DB_PORT,
                            user=config.DB_USER, password=config.DB_PASSWORD,
-                           dbname=config.DB_NAME, row_factory=dict_row, connect_timeout=5)
+                           dbname=config.DB_NAME, row_factory=dict_row, connect_timeout=5,
+                           prepare_threshold=None)
 
 
 @contextmanager

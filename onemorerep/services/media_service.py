@@ -10,10 +10,10 @@ from onemorerep.database import connect, transaction
 def _supabase_storage():
     if config.MEDIA_STORAGE != "supabase":
         return None
-    if not config.SUPABASE_URL or not config.SUPABASE_SERVICE_ROLE_KEY:
-        raise RuntimeError("Supabase media storage requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.")
+    if not config.SUPABASE_URL or not config.SUPABASE_SECRET_KEY:
+        raise RuntimeError("Supabase media storage requires SUPABASE_URL and SUPABASE_SECRET_KEY.")
     from supabase import create_client
-    client = create_client(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY)
+    client = create_client(config.SUPABASE_URL, config.SUPABASE_SECRET_KEY)
     return client.storage.from_(config.SUPABASE_STORAGE_BUCKET)
 
 
