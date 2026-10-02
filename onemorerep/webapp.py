@@ -2,6 +2,7 @@
 from contextlib import asynccontextmanager
 from datetime import date, time
 import logging
+from pathlib import Path
 from typing import Annotated, Literal
 from urllib.parse import urlsplit
 
@@ -480,3 +481,10 @@ def comment_on_feed_post(post_id:int,payload:CommentIn,user:Annotated[dict,Depen
     except ValueError as exc:
         if str(exc)=="Post not found.": raise HTTPException(status_code=404,detail=str(exc)) from exc
         raise HTTPException(status_code=422,detail=str(exc)) from exc
+
+
+# Keep API routes above the frontend fallback. Vercel then promotes the exported
+# Next.js files to its CDN while FastAPI continues to own /api/* endpoints.
+FRONTEND_BUILD = Path(__file__).resolve().parents[1] / "frontend" / "out"
+app.frontend("/", directory=FRONTEND_BUILD, fallback="auto", check_dir=False)
+
