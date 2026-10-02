@@ -40,6 +40,10 @@ const durationLabel = (seconds: number | null | undefined) => {
 };
 const niceDate = (value: string | null | undefined) => value ? new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 const nicePeriod = (p: string) => p === 'morning' ? 'Morning' : 'Evening';
+const routeView = (pathname: string): View => {
+  const section = pathname.split('/')[2] as View | undefined;
+  return section && nav.some(({ id }) => id === section) || section === 'admin' ? section : 'dashboard';
+};
 
 export function OneMoreRepApp() {
   const pathname = usePathname();
@@ -47,7 +51,7 @@ export function OneMoreRepApp() {
   const [user, setUser] = useState<User | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [view, setView] = useState<View>('dashboard');
+  const view = routeView(pathname);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -85,8 +89,14 @@ export function OneMoreRepApp() {
 
   useEffect(() => {
     if (!bootstrapped) return;
-    const destination = user ? '/dashboard' : '/login';
-    if (pathname !== destination) router.replace(destination);
+    if (!user) {
+      if (pathname !== '/login') router.replace('/login');
+      return;
+    }
+    if (!pathname.startsWith('/dashboard') || (routeView(pathname) === 'admin' && user.role !== 'admin')) {
+      router.replace('/dashboard');
+      return;
+    }
   }, [bootstrapped, pathname, router, user]);
 
   const loadView = useCallback(async (selected: View) => {
@@ -111,6 +121,7 @@ export function OneMoreRepApp() {
 
   useEffect(() => {
     if (!user) return;
+    if (view !== routeView(pathname)) return;
     if (view === 'dashboard' && initialDashboardLoaded.current) {
       initialDashboardLoaded.current = false;
       return;
@@ -118,7 +129,7 @@ export function OneMoreRepApp() {
     let cancelled = false;
     void Promise.resolve().then(() => { if (!cancelled) return loadView(view); });
     return () => { cancelled = true; };
-  }, [user, view, loadView]);
+  }, [user, view, pathname, loadView]);
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(''); setBusy(true);
@@ -127,13 +138,13 @@ export function OneMoreRepApp() {
       const signedIn = authMode === 'login'
         ? await api.login(String(form.get('username')), String(form.get('password')))
         : await api.register(String(form.get('username')), String(form.get('display_name')), String(form.get('password')));
-      setUser(signedIn); setView('dashboard'); router.replace('/dashboard');
+      setUser(signedIn); router.replace('/dashboard');
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not sign in.'); }
     finally { setBusy(false); }
   }
 
   async function signOut() {
-    try { await api.logout(); } finally { setUser(null); setView('dashboard'); setNotice(''); router.replace('/login'); }
+    try { await api.logout(); } finally { setUser(null); setNotice(''); router.replace('/login'); }
   }
 
   async function deleteOwnPost(id:number) {
@@ -154,9 +165,12 @@ export function OneMoreRepApp() {
     catch (e) { setError(e instanceof Error?e.message:'Could not delete your progress report.'); }
   }
 
-  function selectView(next: View) { setView(next); setMobileNav(false); setError(''); setNotice(''); }
+  function selectView(next: View) {
+    setMobileNav(false); setError(''); setNotice('');
+    router.push(next === 'dashboard' ? '/dashboard' : `/dashboard/${next}`);
+  }
 
-  if (!bootstrapped || (user && pathname !== '/dashboard') || (!user && pathname !== '/login')) {
+  if (!bootstrapped || (user && !pathname.startsWith('/dashboard')) || (!user && pathname !== '/login')) {
     return <main className="route-loading" aria-label="Loading"><LoaderCircle size={24} className="spin" /></main>;
   }
 
