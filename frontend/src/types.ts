@@ -1,8 +1,9 @@
 export type User = { id: number; username: string; display_name: string; role: 'user' | 'admin' };
-export type AdminAccount = User & { created_at: string; total_exp:number; workout_count: number; progress_count: number; post_count: number };
+export type AdminAccount = User & { created_at: string; total_exp:number; weekly_exp:number; monthly_exp:number; current_streak:number; longest_streak:number; workout_count: number; progress_count: number; post_count: number };
+export type LeaderboardChanges = {amount:number;weekly_amount:number;monthly_amount:number;current_streak_delta:number;longest_streak_delta:number;workout_delta:number};
 export type AdminReport = {
   user: AdminAccount;
-  exp_adjustments:Array<{amount:number;reason:string;admin_username:string;created_at:string}>;
+  exp_adjustments:Array<LeaderboardChanges & {reason:string;admin_username:string;created_at:string}>;
   workouts: Array<{ id:number; workout_type:string; workout_date:string; start_time:string; duration:number; notes:string; exp_amount:number|null; sport_name:string|null; walking:{distance:number;steps:number;calories:number;avg_speed:number}|null; exercises:Array<{exercise_name:string;weight:number;reps:number;sets:number}>; image_url:string|null }>;
   progress_reports: Array<{ id:number; report_date:string; notes:string; image_url:string|null }>;
   posts: Array<{ id:number; caption:string; created_at:string; workout_id:number|null; achievement_name:string|null; image_url:string|null; likes_count:number; comments_count:number }>;

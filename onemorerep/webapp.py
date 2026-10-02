@@ -101,7 +101,12 @@ class AdminMemberUpdate(BaseModel):
     display_name:str=Field(min_length=1,max_length=80)
 
 class AdminExpAdjustmentIn(BaseModel):
-    amount:int=Field(ge=-1_000_000,le=1_000_000,ne=0)
+    amount:int=Field(default=0,ge=-1_000_000,le=1_000_000)
+    weekly_amount:int=Field(default=0,ge=-1_000_000,le=1_000_000)
+    monthly_amount:int=Field(default=0,ge=-1_000_000,le=1_000_000)
+    current_streak_delta:int=Field(default=0,ge=-100_000,le=100_000)
+    longest_streak_delta:int=Field(default=0,ge=-100_000,le=100_000)
+    workout_delta:int=Field(default=0,ge=-1_000_000,le=1_000_000)
     reason:str=Field(min_length=1,max_length=250)
 
 class AdminProgressUpdate(BaseModel):
@@ -249,7 +254,7 @@ def update_admin_member(user_id:int,payload:AdminMemberUpdate,_admin:Annotated[d
 @app.post("/api/admin/users/{user_id}/exp-adjustments")
 def adjust_admin_member_exp(user_id:int,payload:AdminExpAdjustmentIn,admin:Annotated[dict,Depends(admin_user)]):
     try:
-        result=admin_service.adjust_exp(user_id,admin["id"],admin["username"],payload.amount,payload.reason)
+        result=admin_service.adjust_exp(user_id,admin["id"],admin["username"],payload.model_dump(exclude={"reason"}),payload.reason)
     except ValueError as exc:
         raise HTTPException(status_code=422,detail=str(exc)) from exc
     if not result: raise HTTPException(status_code=404,detail="Account not found.")

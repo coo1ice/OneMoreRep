@@ -5,7 +5,12 @@ from onemorerep.services.exp_service import activity_period
 def dashboard(user_id, conn=None):
     with (connect() if conn is None else nullcontext(conn)) as c:
         user=c.execute("SELECT display_name FROM users WHERE id=%s",(user_id,)).fetchone()
-        streak=c.execute("SELECT current_streak,longest_streak,last_workout_date FROM streaks WHERE user_id=%s",(user_id,)).fetchone()
+        streak=c.execute("""SELECT coalesce(s.current_streak,0)+coalesce(x.current_streak_delta,0) current_streak,
+            coalesce(s.longest_streak,0)+coalesce(x.longest_streak_delta,0) longest_streak,s.last_workout_date
+            FROM (SELECT %s::bigint user_id) u LEFT JOIN streaks s ON s.user_id=u.user_id
+            LEFT JOIN (SELECT user_id,sum(current_streak_delta) current_streak_delta,
+                sum(longest_streak_delta) longest_streak_delta FROM exp_adjustments WHERE user_id=%s GROUP BY user_id) x
+                ON x.user_id=u.user_id""",(user_id,user_id)).fetchone()
         today=c.execute("SELECT coalesce(sum(exp_amount),0) exp FROM exp_records WHERE user_id=%s AND activity_date=current_date",(user_id,)).fetchone()
         total=c.execute("""SELECT coalesce((SELECT sum(exp_amount) FROM exp_records WHERE user_id=%s),0) +
             coalesce((SELECT sum(amount) FROM exp_adjustments WHERE user_id=%s),0) exp""",
@@ -47,7 +52,7 @@ def history(user_id,exp_only=False,conn=None,limit=None):
               UNION ALL
               SELECT x.created_at::date,'admin_adjustment'::text,'EXP adjustment'::text,
                 NULL::integer,x.amount,'admin_adjustment'::text,x.reason,x.admin_username,x.created_at
-              FROM exp_adjustments x WHERE x.user_id=%s
+              FROM exp_adjustments x WHERE x.user_id=%s AND x.amount<>0
             ) records ORDER BY created_at DESC""",(user_id,user_id)).fetchall()
         query="""SELECT w.id,w.workout_date,w.workout_type,w.duration,w.start_time,e.exp_amount,
             EXISTS(SELECT 1 FROM workout_images i WHERE i.workout_id=w.id) has_image
@@ -63,12 +68,16 @@ def statistics(user_id):
     with connect() as c:
         return c.execute("""SELECT (SELECT coalesce(sum(exp_amount),0) FROM exp_records WHERE user_id=%s) +
         (SELECT coalesce(sum(amount),0) FROM exp_adjustments WHERE user_id=%s) total_exp,
-        (SELECT count(*) FROM workouts WHERE user_id=%s) total_workouts,
+        (SELECT count(*) FROM workouts WHERE user_id=%s) +
+        (SELECT coalesce(sum(workout_delta),0) FROM exp_adjustments WHERE user_id=%s) total_workouts,
         (SELECT count(*) FROM workouts WHERE user_id=%s AND workout_type='Strength') strength_workouts,
         (SELECT count(*) FROM workouts WHERE user_id=%s AND workout_type='Walking') walking_sessions,
         (SELECT count(*) FROM workouts WHERE user_id=%s AND workout_type='Sports') sports_sessions,
         coalesce((SELECT sum(weight*reps*sets) FROM exercises e JOIN workouts w ON w.id=e.workout_id WHERE w.user_id=%s),0) total_weight,
         coalesce((SELECT sum(distance) FROM walking x JOIN workouts w ON w.id=x.workout_id WHERE w.user_id=%s),0) total_distance,
         coalesce((SELECT sum(steps) FROM walking x JOIN workouts w ON w.id=x.workout_id WHERE w.user_id=%s),0) total_steps,
-        coalesce((SELECT longest_streak FROM streaks WHERE user_id=%s),0) longest_streak,
-            coalesce((SELECT current_streak FROM streaks WHERE user_id=%s),0) current_streak""",(user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id)).fetchone()
+        coalesce((SELECT longest_streak FROM streaks WHERE user_id=%s),0) +
+        (SELECT coalesce(sum(longest_streak_delta),0) FROM exp_adjustments WHERE user_id=%s) longest_streak,
+        coalesce((SELECT current_streak FROM streaks WHERE user_id=%s),0) +
+        (SELECT coalesce(sum(current_streak_delta),0) FROM exp_adjustments WHERE user_id=%s) current_streak""",
+        (user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id)).fetchone()

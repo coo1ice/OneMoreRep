@@ -1,4 +1,4 @@
-import type { Achievement, AdminAccount, AdminReport, Dashboard, ExpRecord, FeedComment, FeedPost, FriendGroup, FriendList, LeaderboardRow, ProgressReport, Statistics, User, Workout, WorkoutDetail } from "@/types";
+import type { Achievement, AdminAccount, AdminReport, Dashboard, ExpRecord, FeedComment, FeedPost, FriendGroup, FriendList, LeaderboardChanges, LeaderboardRow, ProgressReport, Statistics, User, Workout, WorkoutDetail } from "@/types";
 
 const configuredApiBase = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
 const pointsToThisComputer = /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i.test(configuredApiBase || "");
@@ -28,7 +28,7 @@ export const api = {
   adminUsers: () => request<AdminAccount[]>("/api/admin/users"),
   adminReport: (id: number) => request<AdminReport>(`/api/admin/users/${id}`),
   adminUpdateMember: (id:number, display_name:string) => request(`/api/admin/users/${id}`, { method:"PUT", body:JSON.stringify({display_name}) }),
-  adminAdjustExp: (id:number, amount:number, reason:string) => request<{total_exp:number}>(`/api/admin/users/${id}/exp-adjustments`, { method:"POST", body:JSON.stringify({amount,reason}) }),
+  adminAdjustLeaderboard: (id:number, changes:LeaderboardChanges, reason:string) => request<Record<string,number>>(`/api/admin/users/${id}/exp-adjustments`, { method:"POST", body:JSON.stringify({...changes,reason}) }),
   adminUpdateWorkout: (userId:number,id:number,payload:unknown) => request(`/api/admin/users/${userId}/workouts/${id}`, { method:"PUT", body:JSON.stringify(payload) }),
   adminUpdateProgress: (userId:number,id:number,payload:{notes:string}) => request(`/api/admin/users/${userId}/progress/${id}`, { method:"PUT", body:JSON.stringify(payload) }),
   adminUpdatePost: (userId:number,id:number,caption:string) => request(`/api/admin/users/${userId}/posts/${id}`, { method:"PUT", body:JSON.stringify({caption}) }),

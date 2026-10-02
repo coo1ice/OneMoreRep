@@ -1,9 +1,11 @@
 def sync_achievements(conn,user_id):
-    stats=conn.execute("""SELECT (SELECT count(*) FROM workouts WHERE user_id=%s) workouts,
+    stats=conn.execute("""SELECT (SELECT count(*) FROM workouts WHERE user_id=%s) +
+      (SELECT coalesce(sum(workout_delta),0) FROM exp_adjustments WHERE user_id=%s) workouts,
       (SELECT coalesce(sum(exp_amount),0) FROM exp_records WHERE user_id=%s) +
       (SELECT coalesce(sum(amount),0) FROM exp_adjustments WHERE user_id=%s) exp,
-      coalesce((SELECT longest_streak FROM streaks WHERE user_id=%s),0) longest""",
-      (user_id,user_id,user_id,user_id)).fetchone()
+      coalesce((SELECT longest_streak FROM streaks WHERE user_id=%s),0) +
+      (SELECT coalesce(sum(longest_streak_delta),0) FROM exp_adjustments WHERE user_id=%s) longest""",
+      (user_id,user_id,user_id,user_id,user_id,user_id)).fetchone()
     earned=set()
     if stats["workouts"]>=1: earned.add("First Workout")
     if stats["workouts"]>=100: earned.add("100 Workouts")

@@ -8,7 +8,16 @@ from onemorerep.services.achievement_service import sync_achievements
 _USER_SUMMARY = """SELECT u.id,u.username,u.display_name,u.role,u.created_at,
     coalesce((SELECT sum(e.exp_amount) FROM exp_records e WHERE e.user_id=u.id),0) +
       coalesce((SELECT sum(x.amount) FROM exp_adjustments x WHERE x.user_id=u.id),0) total_exp,
-    (SELECT count(*) FROM workouts w WHERE w.user_id=u.id) workout_count,
+    coalesce((SELECT sum(e.exp_amount) FROM exp_records e WHERE e.user_id=u.id AND e.activity_date>=current_date-6),0) +
+      coalesce((SELECT sum(x.amount+x.weekly_amount) FROM exp_adjustments x WHERE x.user_id=u.id AND x.created_at::date>=current_date-6),0) weekly_exp,
+    coalesce((SELECT sum(e.exp_amount) FROM exp_records e WHERE e.user_id=u.id AND date_trunc('month',e.activity_date)=date_trunc('month',current_date)),0) +
+      coalesce((SELECT sum(x.amount+x.monthly_amount) FROM exp_adjustments x WHERE x.user_id=u.id AND date_trunc('month',x.created_at)=date_trunc('month',current_timestamp)),0) monthly_exp,
+    coalesce((SELECT s.current_streak FROM streaks s WHERE s.user_id=u.id),0) +
+      coalesce((SELECT sum(x.current_streak_delta) FROM exp_adjustments x WHERE x.user_id=u.id),0) current_streak,
+    coalesce((SELECT s.longest_streak FROM streaks s WHERE s.user_id=u.id),0) +
+      coalesce((SELECT sum(x.longest_streak_delta) FROM exp_adjustments x WHERE x.user_id=u.id),0) longest_streak,
+    (SELECT count(*) FROM workouts w WHERE w.user_id=u.id) +
+      coalesce((SELECT sum(x.workout_delta) FROM exp_adjustments x WHERE x.user_id=u.id),0) workout_count,
     (SELECT count(*) FROM progress_reports r WHERE r.user_id=u.id) progress_count,
     (SELECT count(*) FROM feed_posts p WHERE p.user_id=u.id) post_count
     FROM users u"""
@@ -49,7 +58,8 @@ def user_report(user_id):
         likes=conn.execute("""SELECT p.id post_id,u.display_name liker,l.created_at
             FROM feed_likes l JOIN feed_posts p ON p.id=l.post_id JOIN users u ON u.id=l.user_id
             WHERE p.user_id=%s ORDER BY l.created_at DESC""",(user_id,)).fetchall()
-        exp_adjustments=conn.execute("""SELECT amount,reason,admin_username,created_at
+        exp_adjustments=conn.execute("""SELECT amount,weekly_amount,monthly_amount,current_streak_delta,
+            longest_streak_delta,workout_delta,reason,admin_username,created_at
             FROM exp_adjustments WHERE user_id=%s ORDER BY created_at DESC,id DESC""",(user_id,)).fetchall()
     exercises_by_workout={}
     for item in exercise_rows:
@@ -71,27 +81,39 @@ def user_report(user_id):
         "comments":comments,"likes":likes,"exp_adjustments":exp_adjustments}
 
 
-def adjust_exp(user_id,admin_id,admin_username,amount,reason):
+def adjust_exp(user_id,admin_id,admin_username,changes,reason):
     reason=(reason or "").strip()
-    if amount == 0 or abs(amount)>1_000_000:
-        raise ValueError("EXP change must be between -1,000,000 and 1,000,000, excluding zero.")
+    limits={"amount":1_000_000,"weekly_amount":1_000_000,"monthly_amount":1_000_000,
+        "current_streak_delta":100_000,"longest_streak_delta":100_000,"workout_delta":1_000_000}
+    changes={key:int(changes.get(key,0)) for key in limits}
+    if not any(changes.values()):
+        raise ValueError("Change at least one leaderboard value.")
+    if any(abs(value)>limits[key] for key,value in changes.items()):
+        raise ValueError("One or more changes exceed the allowed limit.")
     if not reason or len(reason)>250:
         raise ValueError("Enter a reason of 1 to 250 characters.")
     with transaction() as conn:
         member=conn.execute("SELECT id FROM users WHERE id=%s FOR UPDATE",(user_id,)).fetchone()
         if not member:
             return None
-        totals=conn.execute("""SELECT
-            coalesce((SELECT sum(exp_amount) FROM exp_records WHERE user_id=%s),0) +
-            coalesce((SELECT sum(amount) FROM exp_adjustments WHERE user_id=%s),0) total_exp""",
-            (user_id,user_id)).fetchone()
-        updated_total=int(totals["total_exp"])+amount
-        if updated_total<0:
-            raise ValueError("EXP cannot be reduced below zero.")
-        conn.execute("""INSERT INTO exp_adjustments(user_id,admin_user_id,admin_username,amount,reason)
-            VALUES(%s,%s,%s,%s,%s)""",(user_id,admin_id,admin_username,amount,reason))
+        current=conn.execute(_USER_SUMMARY+" WHERE u.id=%s",(user_id,)).fetchone()
+        updated={"total_exp":int(current["total_exp"])+changes["amount"],
+            "weekly_exp":int(current["weekly_exp"])+changes["amount"]+changes["weekly_amount"],
+            "monthly_exp":int(current["monthly_exp"])+changes["amount"]+changes["monthly_amount"],
+            "current_streak":int(current["current_streak"])+changes["current_streak_delta"],
+            "longest_streak":int(current["longest_streak"])+changes["longest_streak_delta"],
+            "workout_count":int(current["workout_count"])+changes["workout_delta"]}
+        if min(updated.values())<0:
+            raise ValueError("Leaderboard values cannot be reduced below zero.")
+        if updated["longest_streak"]<updated["current_streak"]:
+            raise ValueError("Best streak cannot be lower than the current streak.")
+        conn.execute("""INSERT INTO exp_adjustments(user_id,admin_user_id,admin_username,amount,weekly_amount,
+            monthly_amount,current_streak_delta,longest_streak_delta,workout_delta,reason)
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            (user_id,admin_id,admin_username,changes["amount"],changes["weekly_amount"],changes["monthly_amount"],
+             changes["current_streak_delta"],changes["longest_streak_delta"],changes["workout_delta"],reason))
         sync_achievements(conn,user_id)
-    return {"total_exp":updated_total}
+    return updated
 
 
 def workout_image(user_id,workout_id):

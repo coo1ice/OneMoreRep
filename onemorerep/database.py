@@ -58,9 +58,14 @@ def initialize_schema():
         """CREATE TABLE IF NOT EXISTS exp_adjustments (
             id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             admin_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-            admin_username TEXT NOT NULL, amount INTEGER NOT NULL CHECK(amount <> 0),
+            admin_username TEXT NOT NULL, amount INTEGER NOT NULL DEFAULT 0,
+            weekly_amount INTEGER NOT NULL DEFAULT 0, monthly_amount INTEGER NOT NULL DEFAULT 0,
+            current_streak_delta INTEGER NOT NULL DEFAULT 0, longest_streak_delta INTEGER NOT NULL DEFAULT 0,
+            workout_delta INTEGER NOT NULL DEFAULT 0,
             reason TEXT NOT NULL CHECK(length(reason) BETWEEN 1 AND 250),
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now())""",
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            CONSTRAINT exp_adjustments_any_change_check CHECK(amount<>0 OR weekly_amount<>0 OR monthly_amount<>0 OR
+              current_streak_delta<>0 OR longest_streak_delta<>0 OR workout_delta<>0))""",
         """CREATE TABLE IF NOT EXISTS friendships (
             id BIGSERIAL PRIMARY KEY, user1_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             user2_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -162,6 +167,16 @@ def initialize_schema():
     with transaction() as conn:
         for sql in statements:
             conn.execute(sql)
+        for column in ("weekly_amount", "monthly_amount", "current_streak_delta", "longest_streak_delta", "workout_delta"):
+            conn.execute(f"ALTER TABLE exp_adjustments ADD COLUMN IF NOT EXISTS {column} INTEGER NOT NULL DEFAULT 0")
+        conn.execute("ALTER TABLE exp_adjustments DROP CONSTRAINT IF EXISTS exp_adjustments_amount_check")
+        conn.execute("""DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='exp_adjustments_any_change_check') THEN
+              ALTER TABLE exp_adjustments ADD CONSTRAINT exp_adjustments_any_change_check CHECK(
+                amount<>0 OR weekly_amount<>0 OR monthly_amount<>0 OR current_streak_delta<>0 OR
+                longest_streak_delta<>0 OR workout_delta<>0);
+            END IF;
+        END $$""")
         conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'")
         conn.execute("""DO $$ BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='users_role_check') THEN
