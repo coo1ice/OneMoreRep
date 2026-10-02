@@ -218,3 +218,4 @@ tbody tr:hover,.current-user-row{background:#22272E}
   font-size:12px;line-height:1.5;text-align:center;
 }
 .auth-private svg{flex:0 0 auto;margin-top:1px;color:var(--green)}
+.route-loading{display:grid;min-height:100vh;place-items:center;background:var(--bg);color:var(--navy-light)}

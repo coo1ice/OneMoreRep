@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Activity, Award, BarChart3, Camera, Check, ChevronRight, Clock3, Dumbbell,
   Footprints, Flame, Heart, ImagePlus, LayoutDashboard, LoaderCircle, LogOut,
@@ -41,7 +42,10 @@ const niceDate = (value: string | null | undefined) => value ? new Date(`${value
 const nicePeriod = (p: string) => p === 'morning' ? 'Morning' : 'Evening';
 
 export function OneMoreRepApp() {
+  const pathname = usePathname();
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [bootstrapped, setBootstrapped] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [view, setView] = useState<View>('dashboard');
   const [busy, setBusy] = useState(false);
@@ -76,8 +80,14 @@ export function OneMoreRepApp() {
       setWorkouts(initial.workouts);
       initialDashboardLoaded.current = true;
       setUser(initial.user);
-    }).catch(() => setUser(null));
+    }).catch(() => setUser(null)).finally(() => setBootstrapped(true));
   }, []);
+
+  useEffect(() => {
+    if (!bootstrapped) return;
+    const destination = user ? '/dashboard' : '/login';
+    if (pathname !== destination) router.replace(destination);
+  }, [bootstrapped, pathname, router, user]);
 
   const loadView = useCallback(async (selected: View) => {
     if (!user) return;
@@ -117,13 +127,13 @@ export function OneMoreRepApp() {
       const signedIn = authMode === 'login'
         ? await api.login(String(form.get('username')), String(form.get('password')))
         : await api.register(String(form.get('username')), String(form.get('display_name')), String(form.get('password')));
-      setUser(signedIn); setView('dashboard');
+      setUser(signedIn); setView('dashboard'); router.replace('/dashboard');
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not sign in.'); }
     finally { setBusy(false); }
   }
 
   async function signOut() {
-    try { await api.logout(); } finally { setUser(null); setView('dashboard'); setNotice(''); }
+    try { await api.logout(); } finally { setUser(null); setView('dashboard'); setNotice(''); router.replace('/login'); }
   }
 
   async function deleteOwnPost(id:number) {
@@ -145,6 +155,10 @@ export function OneMoreRepApp() {
   }
 
   function selectView(next: View) { setView(next); setMobileNav(false); setError(''); setNotice(''); }
+
+  if (!bootstrapped || (user && pathname !== '/dashboard') || (!user && pathname !== '/login')) {
+    return <main className="route-loading" aria-label="Loading"><LoaderCircle size={24} className="spin" /></main>;
+  }
 
   if (!user) {
     return <AuthScreen mode={authMode} setMode={setAuthMode} onSubmit={submitAuth} busy={busy} error={error} />;
