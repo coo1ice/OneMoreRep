@@ -1,6 +1,14 @@
 import type { Achievement, AdminAccount, AdminReport, Dashboard, ExpRecord, FeedComment, FeedPost, FriendList, LeaderboardRow, ProgressReport, Statistics, User, Workout, WorkoutDetail } from "@/types";
 
-export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+const configuredApiBase = process.env.NEXT_PUBLIC_API_URL?.trim();
+const pointsToThisComputer = /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i.test(configuredApiBase || "");
+const localDevelopmentApi = process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000" : "";
+
+export const API_BASE = (
+  configuredApiBase && !(process.env.NODE_ENV === "production" && pointsToThisComputer)
+    ? configuredApiBase
+    : localDevelopmentApi
+).replace(/\/$/, "");
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -56,3 +64,4 @@ export const api = {
   },
   share: (form: FormData) => request<{ id: number }>("/api/feed", { method: "POST", body: form }),
 };
+
