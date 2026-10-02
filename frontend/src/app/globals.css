@@ -167,3 +167,45 @@ tbody tr:hover,.current-user-row{background:#22272E}
   .profile-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
   .record-actions{align-items:flex-start;flex-direction:row;flex-wrap:wrap}
 }
+
+/* Keep the page hierarchy clear without stacking a card inside every section. */
+.sidebar-tip{display:none}
+.panel,.group-card{box-shadow:none}
+.metric-grid,.stats-grid{gap:0;background:transparent;border-bottom:1px solid var(--border)}
+.metric-card,.stats-grid .metric-card{
+  min-height:0;padding:14px 16px;background:transparent;border:0;border-radius:0;box-shadow:none;
+  border-right:1px solid var(--border);justify-content:center
+}
+.metric-card:nth-child(4n),.stats-grid .metric-card:nth-child(3n){border-right:0}
+.metric-icon{width:auto;height:auto;margin:0 0 8px;background:transparent!important;color:var(--saffron)}
+.metric-card strong{margin-top:3px}
+.mini-feed-list{grid-template-columns:1fr;gap:0}
+.mini-feed .feed-card{
+  margin:0;padding:14px 0;background:transparent;border:0;border-bottom:1px solid var(--border);
+  border-radius:0;box-shadow:none
+}
+.mini-feed .feed-card:last-child{border-bottom:0}
+.mini-feed-list .feed-card:nth-child(n+3){display:block}
+.progress-history .progress-card{
+  padding:16px 0;background:transparent;border:0;border-bottom:1px solid var(--border);
+  border-radius:0;box-shadow:none
+}
+.progress-history .progress-card:last-of-type{border-bottom:0}
+.achievement-grid{display:block}
+.achievement-card{
+  padding:13px 0;background:transparent;border:0;border-bottom:1px solid var(--border);
+  border-radius:0;box-shadow:none
+}
+.achievement-card:last-child{border-bottom:0}
+.friend-group-card{
+  padding:16px 0;background:transparent;border:0;border-top:1px solid var(--border);
+  border-radius:0;box-shadow:none
+}
+.admin-data-grid>.panel{padding:18px 0;background:transparent;border:0;border-top:1px solid var(--border);border-radius:0}
+@media(max-width:760px){
+  .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metric-card,.stats-grid .metric-card{padding:12px}
+  .metric-card:nth-child(4n){border-right:1px solid var(--border)}
+  .metric-card:nth-child(2n),.stats-grid .metric-card:nth-child(2n){border-right:0}
+  .metric-card:nth-child(n+3){border-top:1px solid var(--border)}
+}

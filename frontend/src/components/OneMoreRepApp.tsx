@@ -155,7 +155,7 @@ export function OneMoreRepApp() {
           <nav aria-label="Main navigation">
             {[...nav, ...(user.role === 'admin' ? [{ id: 'admin' as const, label: 'Admin', icon: ShieldCheck }] : [])].map(({ id, label, icon: Icon }) => <button key={id} className={`nav-item ${view === id ? 'nav-active' : ''}`} onClick={() => selectView(id)}><Icon size={18} strokeWidth={2} /><span>{label}</span>{id === 'feed' && <span className="nav-dot" />}</button>)}
           </nav>
-          <div className="sidebar-bottom"><div className="sidebar-tip"><span className="tip-icon"><Flame size={17} /></span><strong>Keep your streak</strong><p>Every qualifying day keeps your momentum alive.</p></div><button className="nav-item logout-item" onClick={signOut}><LogOut size={18} /><span>Log out</span></button><div className="sidebar-user"><span className="avatar avatar-small">{initials(user.display_name)}</span><span><b>{user.display_name}</b><small>@{user.username}</small></span></div></div>
+          <div className="sidebar-bottom"><button className="nav-item logout-item" onClick={signOut}><LogOut size={18} /><span>Log out</span></button><div className="sidebar-user"><span className="avatar avatar-small">{initials(user.display_name)}</span><span><b>{user.display_name}</b><small>@{user.username}</small></span></div></div>
         </aside>
         {mobileNav && <button className="scrim" aria-label="Close navigation" onClick={() => setMobileNav(false)} />}
 
