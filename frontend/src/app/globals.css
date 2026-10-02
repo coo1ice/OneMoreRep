@@ -92,3 +92,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .shared-achievement{background:#211d18;border-color:#593818}.shared-achievement small{color:#FF7A00}.achievement-card>span svg{color:#FF7A00}
 /* Keep account actions visually separate from earned achievement cards */
 .profile-panel .logout-button{display:flex;width:max-content;margin-top:24px;align-self:flex-start;background:#241c20;border-color:#593238;color:#ff9292}.profile-panel .logout-button:hover:not(:disabled){background:#351c20;border-color:#FF4D4D;color:#FF9292}
+
+
+/* User-owned records can be removed without exposing controls on friends' content. */
+.record-actions{display:flex;align-items:center;gap:9px}.user-delete-button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.comment-row>div{flex:1;min-width:0}.comment-delete-button{flex:0 0 auto;color:var(--muted)}.comment-delete-button:hover{background:#351c20;color:#ff9292}@media(max-width:560px){.record-actions{align-items:flex-end;flex-direction:column;gap:6px}}
