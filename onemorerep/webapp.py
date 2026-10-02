@@ -55,7 +55,11 @@ async def check_mutation_origin(request:Request,call_next):
         if origin:
             parsed_origin=urlsplit(origin)
             request_host=request.headers.get("host","").lower()
-            same_origin=(parsed_origin.scheme==request.url.scheme and
+            # Vercel terminates TLS before forwarding requests to the Python
+            # function, so request.url.scheme can be "http" for an HTTPS page.
+            forwarded_scheme=request.headers.get("x-forwarded-proto","").split(",",1)[0].strip().lower()
+            effective_scheme=forwarded_scheme if forwarded_scheme in {"http","https"} else request.url.scheme
+            same_origin=(parsed_origin.scheme==effective_scheme and
                          parsed_origin.netloc.lower()==request_host and
                          not parsed_origin.path and not parsed_origin.query and not parsed_origin.fragment)
             if not same_origin and origin not in config.CORS_ORIGINS:
