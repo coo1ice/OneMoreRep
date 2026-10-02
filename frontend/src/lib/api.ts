@@ -41,6 +41,7 @@ export const api = {
   logout: () => request<void>("/api/auth/logout", { method: "POST" }),
   dashboard: () => request<Dashboard>("/api/dashboard"),
   workouts: () => request<Workout[]>("/api/activities"),
+  deleteWorkout: (id:number) => request<{deleted:boolean}>(`/api/activities/${id}`, { method:"DELETE" }),
   activityDetail: (id: number) => request<WorkoutDetail>(`/api/activities/${id}`),
   exp: () => request<ExpRecord[]>("/api/exp"),
   statistics: () => request<Statistics>("/api/statistics"),
@@ -53,6 +54,7 @@ export const api = {
   addComment: (id: number, body: string) => request<{ id: number; comments_count: number }>(`/api/feed/${id}/comments`, { method: "POST", body: JSON.stringify({ body }) }),
   progress: () => request<ProgressReport[]>("/api/progress"),
   saveProgress: (form: FormData) => request<{ id: number }>("/api/progress", { method: "POST", body: form }),
+  deleteProgress: (id:number) => request<{deleted:boolean}>(`/api/progress/${id}`, { method:"DELETE" }),
   friends: () => request<FriendList>("/api/friends"),
   addFriend: (username: string) => request<{ status: string }>("/api/friends/requests", { method: "POST", body: JSON.stringify({ username }) }),
   respondFriend: (id: number, accept: boolean) => request<{ status: string }>(`/api/friends/requests/${id}`, { method: "POST", body: JSON.stringify({ accept }) }),
@@ -62,4 +64,6 @@ export const api = {
     return request<{ id: number; exp_earned: number; duration_seconds: number }>("/api/activities", { method: "POST", body: form });
   },
   share: (form: FormData) => request<{ id: number }>("/api/feed", { method: "POST", body: form }),
+  deletePost: (id:number) => request<{deleted:boolean}>(`/api/feed/${id}`, { method:"DELETE" }),
+  deleteComment: (postId:number,commentId:number) => request<{deleted:boolean}>(`/api/feed/${postId}/comments/${commentId}`, { method:"DELETE" }),
 };
