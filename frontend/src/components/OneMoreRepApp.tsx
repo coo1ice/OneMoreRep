@@ -41,9 +41,12 @@ const durationLabel = (seconds: number | null | undefined) => {
 const niceDate = (value: string | null | undefined) => value ? new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 const nicePeriod = (p: string) => p === 'morning' ? 'Morning' : 'Evening';
 const routeView = (pathname: string): View => {
-  const section = pathname.split('/')[2] as View | undefined;
-  return section && nav.some(({ id }) => id === section) || section === 'admin' ? section : 'dashboard';
+  const section = pathname.split('/')[1] as View | undefined;
+  if (!section) return 'dashboard';
+  if (section === 'dashboard' || section === 'admin' || nav.some(({ id }) => id === section)) return section;
+  return 'dashboard';
 };
+const isAppRoute = (pathname: string) => pathname === '/dashboard' || pathname === `/${routeView(pathname)}`;
 
 export function OneMoreRepApp() {
   const pathname = usePathname();
@@ -93,7 +96,7 @@ export function OneMoreRepApp() {
       if (pathname !== '/login') router.replace('/login');
       return;
     }
-    if (!pathname.startsWith('/dashboard') || (routeView(pathname) === 'admin' && user.role !== 'admin')) {
+    if (!isAppRoute(pathname) || (routeView(pathname) === 'admin' && user.role !== 'admin')) {
       router.replace('/dashboard');
       return;
     }
@@ -167,10 +170,10 @@ export function OneMoreRepApp() {
 
   function selectView(next: View) {
     setMobileNav(false); setError(''); setNotice('');
-    router.push(next === 'dashboard' ? '/dashboard' : `/dashboard/${next}`);
+    router.push(next === 'dashboard' ? '/dashboard' : `/${next}`);
   }
 
-  if (!bootstrapped || (user && !pathname.startsWith('/dashboard')) || (!user && pathname !== '/login')) {
+  if (!bootstrapped || (user && !isAppRoute(pathname)) || (!user && pathname !== '/login')) {
     return <LoadingSkeleton />;
   }
 

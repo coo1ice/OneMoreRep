@@ -7,6 +7,6 @@ export function generateStaticParams() {
   return sections.map((section) => ({ section }));
 }
 
-export default function DashboardSectionPage() {
+export default function SectionPage() {
   return null;
 }
