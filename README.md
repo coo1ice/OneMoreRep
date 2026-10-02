@@ -92,7 +92,7 @@ python -m unittest discover -s tests -v
 
 ## Deploying to Vercel
 
-The repository has a Vercel ASGI entry point at `api/index.py`. Vercel builds the Next.js export, and FastAPI's `app.frontend()` serves it from the same origin while API routes remain handled by FastAPI. The `.vercelignore` file excludes local database files, local credentials, and local uploads.
+The repository has a Vercel ASGI entry point at `api/index.py`. Vercel builds the Next.js export, publishes its hashed JavaScript and CSS under the root `public/_next` CDN path, and FastAPI's `app.frontend()` serves the exported pages while API routes remain handled by FastAPI. The `.vercelignore` file excludes local database files, local credentials, and local uploads.
 
 Before deploying, create a Supabase project and a **private** Storage bucket named `onemorerep-private` (or set another name in the environment). The app supports Supabase Storage for photos when enabled. Do not point Vercel at the PostgreSQL server running on your PC.
 

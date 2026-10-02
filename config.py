@@ -2,6 +2,14 @@
 import os
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+
+if load_dotenv:
+    load_dotenv(Path(__file__).parent / ".env")
+
 DB_HOST = os.getenv("ONEMOREREP_DB_HOST", "127.0.0.1")
 DB_PORT = int(os.getenv("ONEMOREREP_DB_PORT", "5432"))
 DB_USER = os.getenv("ONEMOREREP_DB_USER", "postgres")

@@ -96,3 +96,69 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* User-owned records can be removed without exposing controls on friends' content. */
 .record-actions{display:flex;align-items:center;gap:9px}.user-delete-button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.comment-row>div{flex:1;min-width:0}.comment-delete-button{flex:0 0 auto;color:var(--muted)}.comment-delete-button:hover{background:#351c20;color:#ff9292}@media(max-width:560px){.record-actions{align-items:flex-end;flex-direction:column;gap:6px}}
+
+/* Restore the dark steel palette across components that predate the theme refresh. */
+.topbar,.sidebar,.panel,.metric-card,.group-card,.composer,.feed-card,.profile-panel,.profile-card,.auth-page,.auth-panel,.auth-card,.table-panel,.friends-main,.friends-side{background-color:var(--card);color:var(--text)}
+.topbar{border-color:var(--border)}
+.sidebar{border-color:var(--border)}
+.workspace{background:var(--bg)}
+.nav-item,.text-button,.brand,.brand-copy strong,.page-heading h1,.panel-heading h2,.metric-card strong,.workout-copy b,.feed-author b,.composer-title b,.shared-workout-copy b,.profile-hero h2,.profile-facts b,.table-kind,.table-person,.auth-card h2,.auth-switch button{color:var(--text)}
+.sidebar-tip,.period-row,.friend-empty,.shared-workout,.shared-achievement,.date-chip,.xp-chip,.count-pill,.table-kind,.rank-mark{background:var(--soft);border-color:var(--border);color:var(--muted)}
+.metric-icon,.empty-state>span,.profile-avatar,.avatar{background:var(--soft);color:var(--navy-light)}
+.nav-item:hover,.nav-active,.secondary-button,.private-pill,.top-exp,.logout-item,.logout-button{background:var(--soft);color:var(--text);border-color:var(--border)}
+.nav-active{background:#2a2f36}.nav-item:hover{color:var(--navy-light)}
+.composer textarea,.activity-form textarea,.progress-form textarea,.auth-form input,.activity-form input,.activity-form select,.progress-form input,.progress-form select,.add-friend-form input,.composer select,.composer-tools select{background:#0F1115;color:var(--text);border-color:var(--border)}
+.composer textarea::placeholder,.activity-form textarea::placeholder,.auth-form input::placeholder{color:var(--muted)}
+.auth-form label,.activity-form label,.progress-form label{color:var(--muted)}
+.auth-side{background:#12161b;color:var(--text)}
+.auth-side>p,.auth-mini-stats div,.auth-brand{color:var(--text)}
+.auth-badge{color:#ffc47c}.auth-side h1 span{color:var(--navy-light)}
+.topbar .brand-mark{background:var(--navy-light);color:#0F1115}
+.topbar .private-pill,.topbar .top-exp{background:var(--soft);color:var(--text)}
+.auth-private,.profile-privacy{background:var(--soft);border-color:var(--border);color:var(--muted)}
+.profile-privacy b,.sidebar-tip strong,.feed-tip b,.empty-state>b,.feed-caption{color:var(--text)}
+.profile-privacy p,.feed-caption{color:var(--muted)}
+.profile-hero,.profile-facts,.workout-row,.feed-card-footer,.friend-row,.period-row,.outgoing-row{border-color:var(--border)}
+th{background:var(--soft);color:var(--muted)}
+td,.table-person,.workout-duration{color:var(--muted)}
+tbody tr:hover,.current-user-row{background:#22272E}
+.primary-button{background:var(--navy-light);color:#0F1115;box-shadow:0 2px 12px rgba(184,245,0,.12)}
+.primary-button:hover:not(:disabled){background:#c9ff18}
+.error-banner,.form-error{background:#351c20;border-color:#593238;color:#ff9292}
+.notice,.form-success{background:#14271e;border-color:#244a37;color:#7ee2aa}
+
+@media(max-width:760px){
+  html,body{width:100%;overflow-x:hidden}
+  .workspace,.main-content,.auth-page{min-width:0;width:100%}
+  .topbar{padding-left:12px;padding-right:12px}
+  .topbar-right{min-width:0}
+  .main-content{padding:20px 14px 32px}
+  .page-heading{gap:12px}
+  .page-heading h1{font-size:clamp(21px,6vw,28px);line-height:1.2;overflow-wrap:anywhere}
+  .panel,.metric-card,.group-card,.composer,.feed-card{min-width:0;padding:15px}
+  .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .feed-aside{grid-template-columns:1fr}
+  .feed-aside .group-card{grid-column:auto}
+  .composer-controls,.composer-tools{align-items:stretch;flex-wrap:wrap}
+  .composer-controls>.primary-button{margin-left:auto}
+  .composer-tools select,.composer select{max-width:100%;min-width:0}
+  .auth-page{display:flex;flex-direction:column}
+  .auth-side{min-height:0;padding:26px 20px 24px}
+  .auth-side h1{font-size:clamp(28px,8vw,38px)}
+  .auth-mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .auth-mini-stats div:last-child{grid-column:1/-1}
+  .auth-panel{padding:28px 20px 34px}
+  .auth-card{width:min(100%,440px)}
+  .exercise-row{grid-template-columns:minmax(0,1fr) minmax(75px,.7fr);gap:9px}
+  .responsive-table{max-width:100%;overscroll-behavior-x:contain}
+}
+@media(max-width:420px){
+  .brand-copy strong{font-size:14px}
+  .top-exp{font-size:8px;padding:5px 6px}
+  .metric-card{padding:12px;min-height:126px}
+  .metric-card strong{font-size:18px}
+  .form-grid-four,.form-grid-three,.stats-grid{grid-template-columns:1fr}
+  .form-grid-three label:first-child{grid-column:auto}
+  .profile-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .record-actions{align-items:flex-start;flex-direction:row;flex-wrap:wrap}
+}

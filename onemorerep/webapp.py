@@ -2,7 +2,6 @@
 from contextlib import asynccontextmanager
 from datetime import date, time
 import logging
-from pathlib import Path
 from typing import Annotated, Literal
 from urllib.parse import urlsplit
 
@@ -513,6 +512,5 @@ def delete_own_feed_comment(post_id:int,comment_id:int,user:Annotated[dict,Depen
 
 # Keep API routes above the frontend fallback. Vercel then promotes the exported
 # Next.js files to its CDN while FastAPI continues to own /api/* endpoints.
-FRONTEND_BUILD = Path(__file__).resolve().parents[1] / "frontend" / "out"
-app.frontend("/", directory=FRONTEND_BUILD, fallback="auto", check_dir=False)
+app.frontend("/", directory="frontend/out", fallback="auto", check_dir=False)
 
