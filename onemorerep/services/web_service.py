@@ -143,6 +143,13 @@ def add_post_comment(user_id, post_id, body):
     return {"id":row["id"],"created_at":row["created_at"],"comments_count":count}
 
 
+def delete_own_comment(user_id, post_id, comment_id):
+    with transaction() as conn:
+        deleted=conn.execute("DELETE FROM feed_comments WHERE id=%s AND user_id=%s AND post_id=%s RETURNING id",
+            (comment_id,user_id,post_id)).fetchone()
+    return bool(deleted)
+
+
 def get_feed_image(user_id, post_id):
     with connect() as conn:
         owner=conn.execute("SELECT user_id FROM feed_posts WHERE id=%s",(post_id,)).fetchone()
