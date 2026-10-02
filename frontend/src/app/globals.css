@@ -139,8 +139,10 @@ tbody tr:hover,.current-user-row{background:#22272E}
   .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .feed-aside{grid-template-columns:1fr}
   .feed-aside .group-card{grid-column:auto}
-  .composer-controls,.composer-tools{align-items:stretch;flex-wrap:wrap}
-  .composer-controls>.primary-button{margin-left:auto}
+  .composer-controls{align-items:stretch;flex-direction:column}
+  .composer-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;align-items:stretch}
+  .attach-button{max-width:none;min-width:0}
+  .composer-controls>.primary-button{width:100%;min-height:44px;margin:0;align-self:stretch}
   .composer-tools select,.composer select{max-width:100%;min-width:0}
   .auth-page{display:flex;flex-direction:column}
   .auth-side{min-height:0;padding:26px 20px 24px}
