@@ -4,7 +4,7 @@ from secrets import token_urlsafe
 from contextlib import nullcontext
 
 from onemorerep.database import connect, transaction
-from onemorerep.services.media_service import read_stored_image, remove_stored_image, store_image_file
+from onemorerep.services.media_service import MAX_IMAGE_BYTES, read_stored_image, remove_stored_image, store_image_file
 
 
 def new_session(user_id):
@@ -55,7 +55,7 @@ def create_feed_post(user_id, caption, workout_id=None, image_bytes=None, mime_t
         if image_bytes is None:
             raise ValueError("The saved workout photo is unavailable.")
         mime_type=source["mime_type"]
-    if image_bytes and len(image_bytes)>8*1024*1024: raise ValueError("Screenshots must be 8 MB or smaller.")
+    if image_bytes and len(image_bytes)>MAX_IMAGE_BYTES: raise ValueError("Screenshots must be 2 MB or smaller.")
     storage_key=store_image_file(image_bytes,mime_type) if image_bytes else None
     try:
         with transaction() as conn:

@@ -6,6 +6,8 @@ from uuid import uuid4
 import config
 from onemorerep.database import connect, transaction
 
+MAX_IMAGE_BYTES = 2 * 1024 * 1024
+
 
 def _supabase_storage():
     if config.MEDIA_STORAGE != "supabase":
@@ -19,8 +21,8 @@ def _supabase_storage():
 
 def store_image_file(image_bytes, mime_type):
     extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}.get(mime_type)
-    if not extension or not image_bytes or len(image_bytes) > 8 * 1024 * 1024:
-        raise ValueError("Use a JPEG, PNG, or WebP image up to 8 MB.")
+    if not extension or not image_bytes or len(image_bytes) > MAX_IMAGE_BYTES:
+        raise ValueError("Use a JPEG, PNG, or WebP image up to 2 MB.")
     key = f"{uuid4().hex}.{extension}"
     bucket = _supabase_storage()
     if bucket:
