@@ -208,3 +208,13 @@ tbody tr:hover,.current-user-row{background:#22272E}
   .metric-card:nth-child(2n),.stats-grid .metric-card:nth-child(2n){border-right:0}
   .metric-card:nth-child(n+3){border-top:1px solid var(--border)}
 }
+
+/* Keep the sign-in privacy reminder light and readable on narrow screens. */
+.auth-switch{margin:18px 0 12px}
+.auth-private{
+  display:flex;justify-content:center;align-items:flex-start;gap:8px;
+  width:min(100%,380px);margin:0 auto;padding:0;
+  border:0;background:transparent;color:var(--muted);
+  font-size:12px;line-height:1.5;text-align:center;
+}
+.auth-private svg{flex:0 0 auto;margin-top:1px;color:var(--green)}
