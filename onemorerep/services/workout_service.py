@@ -32,7 +32,7 @@ def save_activity(user_id, kind, activity_date, start_time, end_time, notes="", 
                 conn.execute("INSERT INTO walking(workout_id,distance,steps,calories,avg_speed) VALUES(%s,%s,%s,%s,%s)",(workout_id,distance,steps,calories,speed))
             else:
                 conn.execute("INSERT INTO sports(workout_id,sport_name) VALUES(%s,%s)",(workout_id,sport_name.strip()))
-            if stored:
+            if storage_key:
                 conn.execute("INSERT INTO workout_images(workout_id,storage_key,mime_type,size_bytes) VALUES(%s,%s,%s,%s)",
                              (workout_id,storage_key,workout_image_mime,len(workout_image_bytes)))
             exp=award_exp(conn,user_id,workout_id,activity_date,start,duration)
