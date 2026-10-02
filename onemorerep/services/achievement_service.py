@@ -1,16 +1,18 @@
-def award_achievements(conn,user_id):
+def sync_achievements(conn,user_id):
     stats=conn.execute("""SELECT (SELECT count(*) FROM workouts WHERE user_id=%s) workouts,
-      (SELECT coalesce(sum(exp_amount),0) FROM exp_records WHERE user_id=%s) exp""",(user_id,user_id)).fetchone()
-    streak=conn.execute("SELECT longest_streak FROM streaks WHERE user_id=%s",(user_id,)).fetchone()
-    earned=[]
-    if stats["workouts"]>=1: earned.append("First Workout")
-    if stats["workouts"]>=100: earned.append("100 Workouts")
-    if stats["exp"]>=1000: earned.append("1,000 EXP")
-    if stats["exp"]>=10000: earned.append("10,000 EXP")
-    if stats["exp"]>=100000: earned.append("100,000 EXP")
-    if streak:
-        for days in (7,30,100):
-            if streak["longest_streak"]>=days: earned.append(f"{days} Day Streak")
+      (SELECT coalesce(sum(exp_amount),0) FROM exp_records WHERE user_id=%s) exp,
+      coalesce((SELECT longest_streak FROM streaks WHERE user_id=%s),0) longest""",
+      (user_id,user_id,user_id)).fetchone()
+    earned=set()
+    if stats["workouts"]>=1: earned.add("First Workout")
+    if stats["workouts"]>=100: earned.add("100 Workouts")
+    for amount in (1000,10000,100000):
+        if stats["exp"]>=amount: earned.add(f"{amount:,} EXP")
+    for days in (7,30,100):
+        if stats["longest"]>=days: earned.add(f"{days} Day Streak")
+    for badge in conn.execute("SELECT id,badge_name FROM achievements WHERE user_id=%s",(user_id,)).fetchall():
+        if badge["badge_name"] not in earned:
+            conn.execute("DELETE FROM achievements WHERE id=%s",(badge["id"],))
     for badge in earned:
         conn.execute("INSERT INTO achievements(user_id,badge_name) VALUES(%s,%s) ON CONFLICT(user_id,badge_name) DO NOTHING",(user_id,badge))
 

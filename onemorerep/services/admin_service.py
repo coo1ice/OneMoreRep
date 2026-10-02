@@ -1,27 +1,25 @@
 """Administrative, role-protected read-only access to account data."""
 from onemorerep.database import connect, transaction
-from onemorerep.services.media_service import read_stored_image, remove_stored_image
+from onemorerep.services.media_service import get_authorized_image, remove_stored_image
 from onemorerep.services.exp_service import activity_period, calculate_exp
 from onemorerep.services.streak_service import update_streak
-from onemorerep.services.achievement_service import award_achievements
+from onemorerep.services.achievement_service import sync_achievements
+
+_USER_SUMMARY = """SELECT u.id,u.username,u.display_name,u.role,u.created_at,
+    (SELECT count(*) FROM workouts w WHERE w.user_id=u.id) workout_count,
+    (SELECT count(*) FROM progress_reports r WHERE r.user_id=u.id) progress_count,
+    (SELECT count(*) FROM feed_posts p WHERE p.user_id=u.id) post_count
+    FROM users u"""
 
 
 def list_users():
     with connect() as conn:
-        return conn.execute("""SELECT u.id,u.username,u.display_name,u.role,u.created_at,
-            (SELECT count(*) FROM workouts w WHERE w.user_id=u.id) workout_count,
-            (SELECT count(*) FROM progress_reports r WHERE r.user_id=u.id) progress_count,
-            (SELECT count(*) FROM feed_posts p WHERE p.user_id=u.id) post_count
-            FROM users u ORDER BY u.created_at DESC,u.id DESC LIMIT 1000""").fetchall()
+        return conn.execute(_USER_SUMMARY + " ORDER BY u.created_at DESC,u.id DESC LIMIT 1000").fetchall()
 
 
 def user_report(user_id):
     with connect() as conn:
-        user=conn.execute("""SELECT u.id,u.username,u.display_name,u.role,u.created_at,
-            (SELECT count(*) FROM workouts w WHERE w.user_id=u.id) workout_count,
-            (SELECT count(*) FROM progress_reports r WHERE r.user_id=u.id) progress_count,
-            (SELECT count(*) FROM feed_posts p WHERE p.user_id=u.id) post_count
-            FROM users u WHERE u.id=%s""",(user_id,)).fetchone()
+        user=conn.execute(_USER_SUMMARY + " WHERE u.id=%s",(user_id,)).fetchone()
         if not user:
             return None
         workouts=conn.execute("""SELECT w.id,w.workout_type,w.workout_date,w.start_time,w.end_time,w.duration,w.notes,
@@ -29,6 +27,11 @@ def user_report(user_id):
             FROM workouts w LEFT JOIN exp_records e ON e.workout_id=w.id
             LEFT JOIN sports s ON s.workout_id=w.id LEFT JOIN workout_images wi ON wi.workout_id=w.id
             WHERE w.user_id=%s ORDER BY w.workout_date DESC,w.start_time DESC,w.id DESC""",(user_id,)).fetchall()
+        exercise_rows=conn.execute("""SELECT e.workout_id,e.exercise_name,e.weight,e.reps,e.sets
+            FROM exercises e JOIN workouts w ON w.id=e.workout_id
+            WHERE w.user_id=%s ORDER BY e.workout_id,e.id""",(user_id,)).fetchall()
+        walking_rows=conn.execute("""SELECT x.workout_id,x.distance,x.steps,x.calories,x.avg_speed
+            FROM walking x JOIN workouts w ON w.id=x.workout_id WHERE w.user_id=%s""",(user_id,)).fetchall()
         progress=conn.execute("""SELECT r.id,r.report_date,r.notes,r.created_at,
             (pi.report_id IS NOT NULL) has_image FROM progress_reports r
             LEFT JOIN progress_images pi ON pi.report_id=r.id WHERE r.user_id=%s
@@ -44,16 +47,18 @@ def user_report(user_id):
         likes=conn.execute("""SELECT p.id post_id,u.display_name liker,l.created_at
             FROM feed_likes l JOIN feed_posts p ON p.id=l.post_id JOIN users u ON u.id=l.user_id
             WHERE p.user_id=%s ORDER BY l.created_at DESC""",(user_id,)).fetchall()
+    exercises_by_workout={}
+    for item in exercise_rows:
+        exercises_by_workout.setdefault(item["workout_id"],[]).append({
+            key:item[key] for key in ("exercise_name","weight","reps","sets")
+        })
+    walking_by_workout={item["workout_id"]:{
+        key:item[key] for key in ("distance","steps","calories","avg_speed")
+    } for item in walking_rows}
     for row in workouts:
         row["image_url"]=f"/api/admin/users/{user_id}/workouts/{row['id']}/image" if row.pop("has_image") else None
-        row["exercises"]=[]
-        row["walking"]=None
-        if row["workout_type"]=="Strength":
-            with connect() as conn:
-                row["exercises"]=conn.execute("SELECT exercise_name,weight,reps,sets FROM exercises WHERE workout_id=%s ORDER BY id",(row["id"],)).fetchall()
-        elif row["workout_type"]=="Walking":
-            with connect() as conn:
-                row["walking"]=conn.execute("SELECT distance,steps,calories,avg_speed FROM walking WHERE workout_id=%s",(row["id"],)).fetchone()
+        row["exercises"]=exercises_by_workout.get(row["id"],[])
+        row["walking"]=walking_by_workout.get(row["id"])
     for row in progress:
         row["image_url"]=f"/api/admin/users/{user_id}/progress/{row['id']}/image" if row.pop("has_image") else None
     for row in posts:
@@ -62,27 +67,18 @@ def user_report(user_id):
         "comments":comments,"likes":likes}
 
 
-def _image_query(sql, params):
-    with connect() as conn:
-        row=conn.execute(sql,params).fetchone()
-    if not row:
-        return None
-    image=read_stored_image(row["storage_key"])
-    return (image,row["mime_type"]) if image is not None else None
-
-
 def workout_image(user_id,workout_id):
-    return _image_query("""SELECT i.storage_key,i.mime_type FROM workout_images i
+    return get_authorized_image("""SELECT i.storage_key,i.mime_type FROM workout_images i
         JOIN workouts w ON w.id=i.workout_id WHERE w.user_id=%s AND w.id=%s""",(user_id,workout_id))
 
 
 def progress_image(user_id,report_id):
-    return _image_query("""SELECT i.storage_key,i.mime_type FROM progress_images i
+    return get_authorized_image("""SELECT i.storage_key,i.mime_type FROM progress_images i
         JOIN progress_reports r ON r.id=i.report_id WHERE r.user_id=%s AND r.id=%s""",(user_id,report_id))
 
 
 def post_image(user_id,post_id):
-    return _image_query("""SELECT i.storage_key,i.mime_type FROM feed_images i
+    return get_authorized_image("""SELECT i.storage_key,i.mime_type FROM feed_images i
         JOIN feed_posts p ON p.id=i.post_id WHERE p.user_id=%s AND p.id=%s""",(user_id,post_id))
 
 
@@ -191,21 +187,8 @@ def delete_workout(user_id,workout_id):
                 conn.execute("INSERT INTO exp_records(user_id,workout_id,activity_date,activity_period,exp_amount) VALUES(%s,%s,%s,%s,%s)",
                     (user_id,row["id"],row["workout_date"],period,amount))
                 awarded.add(slot)
-        update_streak(conn,user_id,None)
-        stats=conn.execute("""SELECT (SELECT count(*) FROM workouts WHERE user_id=%s) workouts,
-            (SELECT coalesce(sum(exp_amount),0) FROM exp_records WHERE user_id=%s) exp,
-            (SELECT longest_streak FROM streaks WHERE user_id=%s) longest""",(user_id,user_id,user_id)).fetchone()
-        desired=set()
-        if stats["workouts"]>=1: desired.add("First Workout")
-        if stats["workouts"]>=100: desired.add("100 Workouts")
-        for amount in (1000,10000,100000):
-            if stats["exp"]>=amount: desired.add(f"{amount:,} EXP")
-        for days in (7,30,100):
-            if stats["longest"]>=days: desired.add(f"{days} Day Streak")
-        for badge in conn.execute("SELECT id,badge_name FROM achievements WHERE user_id=%s",(user_id,)).fetchall():
-            if badge["badge_name"] not in desired:
-                conn.execute("DELETE FROM achievements WHERE id=%s",(badge["id"],))
-        award_achievements(conn,user_id)
+        update_streak(conn,user_id)
+        sync_achievements(conn,user_id)
     if image:
         remove_stored_image(image["storage_key"])
     return True

@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta
+from datetime import time, timedelta
 import config
 
 def _time(value):
@@ -10,21 +10,24 @@ def activity_period(start_time):
     if _time(config.EVENING_START) <= value <= _time(config.EVENING_END): return "evening"
     return None
 
-def qualifies_for_period(duration, start_time):
+def _period_award(duration, start_time):
     seconds = duration.total_seconds() if isinstance(duration, timedelta) else float(duration)
-    return seconds > 1800 and activity_period(start_time) is not None
+    period=activity_period(start_time)
+    if not period or seconds<=1800: return period,0
+    return period,30 if period=="morning" else 20
+
+def qualifies_for_period(duration, start_time):
+    return _period_award(duration,start_time)[1]>0
 
 def calculate_exp(duration, start_time):
-    period = activity_period(start_time)
-    return (30 if period == "morning" else 20) if period and qualifies_for_period(duration, start_time) else 0
+    return _period_award(duration,start_time)[1]
 
 def get_daily_exp(records):
     return min(50, sum(int(r["exp_amount"] if isinstance(r, dict) else r) for r in records))
 
 def award_exp(conn, user_id, workout_id, workout_date, start_time, duration):
-    amount = calculate_exp(duration, start_time)
-    period = activity_period(start_time)
-    if not amount or period is None: return 0
+    period,amount=_period_award(duration,start_time)
+    if not amount: return 0
     row = conn.execute("""INSERT INTO exp_records(user_id,workout_id,activity_date,activity_period,exp_amount)
         VALUES (%s,%s,%s,%s,%s) ON CONFLICT (user_id,activity_date,activity_period) DO NOTHING RETURNING id""",
         (user_id, workout_id, workout_date, period, amount)).fetchone()

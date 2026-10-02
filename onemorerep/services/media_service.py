@@ -60,28 +60,7 @@ def remove_stored_image(key):
             path.unlink()
 
 
-def save_workout_image(user_id, workout_id, image_bytes, mime_type):
-    storage_key = store_image_file(image_bytes, mime_type)
-    previous_key = None
-    try:
-        with transaction() as conn:
-            if not conn.execute("SELECT id FROM workouts WHERE id=%s AND user_id=%s", (workout_id, user_id)).fetchone():
-                raise ValueError("That workout is not available.")
-            previous = conn.execute("SELECT storage_key FROM workout_images WHERE workout_id=%s", (workout_id,)).fetchone()
-            previous_key = previous["storage_key"] if previous else None
-            conn.execute("""INSERT INTO workout_images(workout_id,storage_key,mime_type,size_bytes)
-                VALUES(%s,%s,%s,%s) ON CONFLICT(workout_id) DO UPDATE SET
-                storage_key=EXCLUDED.storage_key,mime_type=EXCLUDED.mime_type,
-                size_bytes=EXCLUDED.size_bytes,created_at=now()""",
-                (workout_id, storage_key, mime_type, len(image_bytes)))
-    except Exception:
-        remove_stored_image(storage_key)
-        raise
-    if previous_key and previous_key != storage_key:
-        remove_stored_image(previous_key)
-
-
-def _authorized_image(sql, params):
+def get_authorized_image(sql, params):
     with connect() as conn:
         row = conn.execute(sql, params).fetchone()
     if not row:
@@ -91,7 +70,7 @@ def _authorized_image(sql, params):
 
 
 def get_workout_image(user_id, workout_id):
-    return _authorized_image("""SELECT i.storage_key,i.mime_type FROM workout_images i
+    return get_authorized_image("""SELECT i.storage_key,i.mime_type FROM workout_images i
         JOIN workouts w ON w.id=i.workout_id WHERE i.workout_id=%s AND w.user_id=%s""",
         (workout_id, user_id))
 
@@ -139,6 +118,6 @@ def list_progress_reports(user_id):
 
 
 def get_progress_image(user_id, report_id):
-    return _authorized_image("""SELECT i.storage_key,i.mime_type FROM progress_images i
+    return get_authorized_image("""SELECT i.storage_key,i.mime_type FROM progress_images i
         JOIN progress_reports r ON r.id=i.report_id WHERE r.id=%s AND r.user_id=%s""",
         (report_id, user_id))

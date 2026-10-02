@@ -60,7 +60,7 @@ class PostgreSQLRulesIntegrationTests(unittest.TestCase):
                     self.assertEqual(award_exp(conn, user_id, noon_id, activity_day, time(12), timedelta(minutes=45)), 0)
                     self.assertEqual(award_exp(conn, user_id, evening_id, activity_day, time(18), timedelta(minutes=40)), 20)
                     self.assertEqual(award_exp(conn, user_id, second_evening_id, activity_day, time(20), timedelta(minutes=50)), 0)
-                    update_streak(conn, user_id, activity_day)
+                    update_streak(conn, user_id)
 
                     totals = conn.execute(
                         """SELECT count(*) workout_count,

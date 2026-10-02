@@ -24,7 +24,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  me: () => request<User>("/api/me"),
   bootstrap: () => request<{user:User;dashboard:Dashboard;feed:FeedPost[];workouts:Workout[]}>("/api/bootstrap"),
   adminUsers: () => request<AdminAccount[]>("/api/admin/users"),
   adminReport: (id: number) => request<AdminReport>(`/api/admin/users/${id}`),

@@ -207,11 +207,6 @@ def logout(request:Request,response:Response):
     return response
 
 
-@app.get("/api/me")
-def me(user:Annotated[dict,Depends(current_user)]):
-    return user
-
-
 @app.get("/api/bootstrap")
 def bootstrap(request:Request):
     token=request.cookies.get(config.SESSION_COOKIE_NAME)
