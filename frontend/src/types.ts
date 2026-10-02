@@ -1,7 +1,8 @@
 export type User = { id: number; username: string; display_name: string; role: 'user' | 'admin' };
-export type AdminAccount = User & { created_at: string; workout_count: number; progress_count: number; post_count: number };
+export type AdminAccount = User & { created_at: string; total_exp:number; workout_count: number; progress_count: number; post_count: number };
 export type AdminReport = {
   user: AdminAccount;
+  exp_adjustments:Array<{amount:number;reason:string;admin_username:string;created_at:string}>;
   workouts: Array<{ id:number; workout_type:string; workout_date:string; start_time:string; duration:number; notes:string; exp_amount:number|null; sport_name:string|null; walking:{distance:number;steps:number;calories:number;avg_speed:number}|null; exercises:Array<{exercise_name:string;weight:number;reps:number;sets:number}>; image_url:string|null }>;
   progress_reports: Array<{ id:number; report_date:string; notes:string; image_url:string|null }>;
   posts: Array<{ id:number; caption:string; created_at:string; workout_id:number|null; achievement_name:string|null; image_url:string|null; likes_count:number; comments_count:number }>;
@@ -18,8 +19,9 @@ export type Workout = {
   duration: number; start_time: string; exp_amount: number | null; has_image: boolean;
 };
 export type ExpRecord = {
-  activity_date: string; activity_period: "morning" | "evening";
-  workout_type: string; duration: number; exp_amount: number;
+  activity_date: string; activity_period: "morning" | "evening" | "admin_adjustment";
+  workout_type: string; duration: number | null; exp_amount: number;
+  source:"workout"|"admin_adjustment"; reason:string|null; admin_username:string|null;
 };
 export type FeedPost = {
   id: number; user_id: number; display_name: string; workout_id: number | null;

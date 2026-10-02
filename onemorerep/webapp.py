@@ -100,6 +100,10 @@ class CommentIn(BaseModel):
 class AdminMemberUpdate(BaseModel):
     display_name:str=Field(min_length=1,max_length=80)
 
+class AdminExpAdjustmentIn(BaseModel):
+    amount:int=Field(ge=-1_000_000,le=1_000_000,ne=0)
+    reason:str=Field(min_length=1,max_length=250)
+
 class AdminProgressUpdate(BaseModel):
     notes:str=Field(default="",max_length=1000)
 
@@ -238,6 +242,16 @@ def admin_user_report(user_id:int,_admin:Annotated[dict,Depends(admin_user)]):
 @app.put("/api/admin/users/{user_id}")
 def update_admin_member(user_id:int,payload:AdminMemberUpdate,_admin:Annotated[dict,Depends(admin_user)]):
     result=admin_service.update_member(user_id,payload.display_name)
+    if not result: raise HTTPException(status_code=404,detail="Account not found.")
+    return result
+
+
+@app.post("/api/admin/users/{user_id}/exp-adjustments")
+def adjust_admin_member_exp(user_id:int,payload:AdminExpAdjustmentIn,admin:Annotated[dict,Depends(admin_user)]):
+    try:
+        result=admin_service.adjust_exp(user_id,admin["id"],admin["username"],payload.amount,payload.reason)
+    except ValueError as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
     if not result: raise HTTPException(status_code=404,detail="Account not found.")
     return result
 

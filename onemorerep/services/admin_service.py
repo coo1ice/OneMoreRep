@@ -1,4 +1,4 @@
-"""Administrative, role-protected read-only access to account data."""
+"""Role-protected account management and audit operations."""
 from onemorerep.database import connect, transaction
 from onemorerep.services.media_service import get_authorized_image, remove_stored_image
 from onemorerep.services.exp_service import activity_period, calculate_exp
@@ -6,6 +6,8 @@ from onemorerep.services.streak_service import update_streak
 from onemorerep.services.achievement_service import sync_achievements
 
 _USER_SUMMARY = """SELECT u.id,u.username,u.display_name,u.role,u.created_at,
+    coalesce((SELECT sum(e.exp_amount) FROM exp_records e WHERE e.user_id=u.id),0) +
+      coalesce((SELECT sum(x.amount) FROM exp_adjustments x WHERE x.user_id=u.id),0) total_exp,
     (SELECT count(*) FROM workouts w WHERE w.user_id=u.id) workout_count,
     (SELECT count(*) FROM progress_reports r WHERE r.user_id=u.id) progress_count,
     (SELECT count(*) FROM feed_posts p WHERE p.user_id=u.id) post_count
@@ -47,6 +49,8 @@ def user_report(user_id):
         likes=conn.execute("""SELECT p.id post_id,u.display_name liker,l.created_at
             FROM feed_likes l JOIN feed_posts p ON p.id=l.post_id JOIN users u ON u.id=l.user_id
             WHERE p.user_id=%s ORDER BY l.created_at DESC""",(user_id,)).fetchall()
+        exp_adjustments=conn.execute("""SELECT amount,reason,admin_username,created_at
+            FROM exp_adjustments WHERE user_id=%s ORDER BY created_at DESC,id DESC""",(user_id,)).fetchall()
     exercises_by_workout={}
     for item in exercise_rows:
         exercises_by_workout.setdefault(item["workout_id"],[]).append({
@@ -64,7 +68,30 @@ def user_report(user_id):
     for row in posts:
         row["image_url"]=f"/api/admin/users/{user_id}/posts/{row['id']}/image" if row.pop("has_image") else None
     return {"user":user,"workouts":workouts,"progress_reports":progress,"posts":posts,
-        "comments":comments,"likes":likes}
+        "comments":comments,"likes":likes,"exp_adjustments":exp_adjustments}
+
+
+def adjust_exp(user_id,admin_id,admin_username,amount,reason):
+    reason=(reason or "").strip()
+    if amount == 0 or abs(amount)>1_000_000:
+        raise ValueError("EXP change must be between -1,000,000 and 1,000,000, excluding zero.")
+    if not reason or len(reason)>250:
+        raise ValueError("Enter a reason of 1 to 250 characters.")
+    with transaction() as conn:
+        member=conn.execute("SELECT id FROM users WHERE id=%s FOR UPDATE",(user_id,)).fetchone()
+        if not member:
+            return None
+        totals=conn.execute("""SELECT
+            coalesce((SELECT sum(exp_amount) FROM exp_records WHERE user_id=%s),0) +
+            coalesce((SELECT sum(amount) FROM exp_adjustments WHERE user_id=%s),0) total_exp""",
+            (user_id,user_id)).fetchone()
+        updated_total=int(totals["total_exp"])+amount
+        if updated_total<0:
+            raise ValueError("EXP cannot be reduced below zero.")
+        conn.execute("""INSERT INTO exp_adjustments(user_id,admin_user_id,admin_username,amount,reason)
+            VALUES(%s,%s,%s,%s,%s)""",(user_id,admin_id,admin_username,amount,reason))
+        sync_achievements(conn,user_id)
+    return {"total_exp":updated_total}
 
 
 def workout_image(user_id,workout_id):

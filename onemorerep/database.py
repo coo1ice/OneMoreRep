@@ -55,6 +55,12 @@ def initialize_schema():
             exp_amount INTEGER NOT NULL CHECK(exp_amount IN (20,30)), earned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             UNIQUE(user_id, activity_date, activity_period), UNIQUE(workout_id)
         )""",
+        """CREATE TABLE IF NOT EXISTS exp_adjustments (
+            id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            admin_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+            admin_username TEXT NOT NULL, amount INTEGER NOT NULL CHECK(amount <> 0),
+            reason TEXT NOT NULL CHECK(length(reason) BETWEEN 1 AND 250),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now())""",
         """CREATE TABLE IF NOT EXISTS friendships (
             id BIGSERIAL PRIMARY KEY, user1_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             user2_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -118,6 +124,7 @@ def initialize_schema():
             created_at TIMESTAMPTZ NOT NULL DEFAULT now())""",
         "CREATE INDEX IF NOT EXISTS idx_workouts_user_date ON workouts(user_id, workout_date)",
         "CREATE INDEX IF NOT EXISTS idx_exp_user_date ON exp_records(user_id, activity_date)",
+        "CREATE INDEX IF NOT EXISTS idx_exp_adjustments_user_created ON exp_adjustments(user_id, created_at DESC)",
         "CREATE INDEX IF NOT EXISTS idx_friendships_accepted ON friendships(user1_id,user2_id) WHERE status='accepted'",
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_friend_groups_owner_name ON friend_groups(owner_id,lower(name))",
         "CREATE INDEX IF NOT EXISTS idx_friend_group_members_user ON friend_group_members(user_id,group_id)",
