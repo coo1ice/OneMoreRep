@@ -234,3 +234,6 @@ tbody tr:hover,.current-user-row{background:#22272E}
 @keyframes skeleton-shimmer{to{background-position-x:-220%}}
 @media(max-width:760px){.skeleton-topbar{height:65px;padding:0 16px}.skeleton-logo{width:36px;height:36px}.skeleton-brand-copy i:first-child{width:112px}.skeleton-brand-copy i:last-child{display:none}.skeleton-tools i:first-child{display:none}.skeleton-workspace{display:block;min-height:calc(100vh - 65px)}.skeleton-sidebar{display:none}.skeleton-content{padding:27px 16px 40px}.skeleton-heading{align-items:flex-start}.skeleton-title{height:27px}.skeleton-action{width:44px;height:40px}.skeleton-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.skeleton-metric{height:84px;border-bottom:1px solid var(--border)}.skeleton-metric:nth-child(2){border-right:0}.skeleton-metric:last-child{grid-column:1/-1;border-bottom:0}.skeleton-columns{grid-template-columns:1fr;gap:12px}.skeleton-panel{min-height:178px;padding:16px}.skeleton-panel:nth-child(2){display:none}}
 @media(prefers-reduced-motion:reduce){.skeleton-shape{animation:none;background:var(--soft)}}
+
+.brand-logo{object-fit:cover;background:var(--lime,#B8F500);}
+@media(max-width:760px){.brand-logo{width:36px;height:36px;}}
