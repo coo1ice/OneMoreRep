@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import Image from 'next/image';
 import {
   Activity, Award, BarChart3, Camera, Check, ChevronRight, Clock3, Dumbbell,
@@ -48,6 +48,7 @@ export function OneMoreRepApp() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [mobileNav, setMobileNav] = useState(false);
+  const initialDashboardLoaded = useRef(false);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [expRows, setExpRows] = useState<ExpRecord[]>([]);
@@ -69,7 +70,13 @@ export function OneMoreRepApp() {
       currentUrl.searchParams.delete('password');
       window.history.replaceState(window.history.state, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
     }
-    api.me().then(setUser).catch(() => setUser(null));
+    api.bootstrap().then((initial) => {
+      setDashboard(initial.dashboard);
+      setPosts(initial.feed);
+      setWorkouts(initial.workouts);
+      initialDashboardLoaded.current = true;
+      setUser(initial.user);
+    }).catch(() => setUser(null));
   }, []);
 
   const loadView = useCallback(async (selected: View) => {
@@ -94,6 +101,10 @@ export function OneMoreRepApp() {
 
   useEffect(() => {
     if (!user) return;
+    if (view === 'dashboard' && initialDashboardLoaded.current) {
+      initialDashboardLoaded.current = false;
+      return;
+    }
     let cancelled = false;
     void Promise.resolve().then(() => { if (!cancelled) return loadView(view); });
     return () => { cancelled = true; };

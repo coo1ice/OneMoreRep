@@ -1,6 +1,7 @@
 """Web-only sessions and friend-scoped feed operations."""
 from hashlib import sha256
 from secrets import token_urlsafe
+from contextlib import nullcontext
 
 from onemorerep.database import connect, transaction
 from onemorerep.services.media_service import read_stored_image, remove_stored_image, store_image_file
@@ -15,11 +16,11 @@ def new_session(user_id):
     return token
 
 
-def session_user(token):
+def session_user(token, conn=None):
     if not token: return None
     digest=sha256(token.encode("utf-8")).hexdigest()
-    with connect() as conn:
-        return conn.execute("""SELECT u.id,u.username,u.display_name,u.role FROM web_sessions s
+    with (connect() if conn is None else nullcontext(conn)) as c:
+        return c.execute("""SELECT u.id,u.username,u.display_name,u.role FROM web_sessions s
             JOIN users u ON u.id=s.user_id WHERE s.token_hash=%s AND s.expires_at>now()""",(digest,)).fetchone()
 
 
@@ -76,11 +77,11 @@ def create_feed_post(user_id, caption, workout_id=None, image_bytes=None, mime_t
         raise
 
 
-def get_feed(user_id, limit=30, before_id=None):
+def get_feed(user_id, limit=30, before_id=None, conn=None):
     cursor_clause=" AND p.id<%s" if before_id is not None else ""
     cursor_params=(before_id,) if before_id is not None else ()
-    with connect() as conn:
-        rows=conn.execute(f"""SELECT p.id,p.user_id,u.display_name,p.workout_id,p.achievement_id,p.caption,p.created_at,
+    with (connect() if conn is None else nullcontext(conn)) as c:
+        rows=c.execute(f"""SELECT p.id,p.user_id,u.display_name,p.workout_id,p.achievement_id,p.caption,p.created_at,
             a.badge_name achievement_name,w.workout_type,w.workout_date,w.duration,e.exp_amount,
             (i.id IS NOT NULL) has_image,
             (SELECT count(*) FROM feed_likes l WHERE l.post_id=p.id) likes_count,

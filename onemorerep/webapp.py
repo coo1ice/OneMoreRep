@@ -212,6 +212,22 @@ def me(user:Annotated[dict,Depends(current_user)]):
     return user
 
 
+@app.get("/api/bootstrap")
+def bootstrap(request:Request):
+    token=request.cookies.get(config.SESSION_COOKIE_NAME)
+    with connect() as conn:
+        user=session_user(token,conn)
+        if not user:
+            raise HTTPException(status_code=401,detail="Sign in to continue.")
+        user=dict(user)
+        return {
+            "user":user,
+            "dashboard":report_service.dashboard(user["id"],conn),
+            "feed":get_feed(user["id"],limit=3,conn=conn),
+            "workouts":report_service.history(user["id"],conn=conn,limit=4),
+        }
+
+
 @app.get("/api/admin/users")
 def admin_users(_admin:Annotated[dict,Depends(admin_user)]):
     return admin_service.list_users()

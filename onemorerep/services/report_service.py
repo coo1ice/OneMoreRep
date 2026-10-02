@@ -32,14 +32,19 @@ def dashboard(user_id, conn=None):
         "morning":by["morning"]["exp"],"morning_duration":by["morning"]["duration"],
         "evening":by["evening"]["exp"],"evening_duration":by["evening"]["duration"],"rank":rank}
 
-def history(user_id,exp_only=False):
-    with connect() as c:
+def history(user_id,exp_only=False,conn=None,limit=None):
+    with (connect() if conn is None else nullcontext(conn)) as c:
         if exp_only:
             return c.execute("""SELECT e.activity_date,e.activity_period,w.workout_type,w.duration,e.exp_amount FROM exp_records e JOIN workouts w ON w.id=e.workout_id WHERE e.user_id=%s ORDER BY e.activity_date DESC,w.start_time DESC""",(user_id,)).fetchall()
-        return c.execute("""SELECT w.id,w.workout_date,w.workout_type,w.duration,w.start_time,e.exp_amount,
+        query="""SELECT w.id,w.workout_date,w.workout_type,w.duration,w.start_time,e.exp_amount,
             EXISTS(SELECT 1 FROM workout_images i WHERE i.workout_id=w.id) has_image
             FROM workouts w LEFT JOIN exp_records e ON e.workout_id=w.id
-            WHERE w.user_id=%s ORDER BY w.workout_date DESC,w.start_time DESC""",(user_id,)).fetchall()
+            WHERE w.user_id=%s ORDER BY w.workout_date DESC,w.start_time DESC"""
+        params=(user_id,)
+        if limit is not None:
+            query+=" LIMIT %s"
+            params+=(max(1,int(limit)),)
+        return c.execute(query,params).fetchall()
 
 def statistics(user_id):
     with connect() as c:
