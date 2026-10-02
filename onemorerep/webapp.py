@@ -17,7 +17,7 @@ from onemorerep.database import connect, initialize_schema, transaction
 from onemorerep.services import achievement_service, admin_service, friend_service, leaderboard_service, media_service, report_service
 from onemorerep.services.web_service import (
     add_post_comment, change_post_like, create_feed_post, end_session, get_feed,
-    get_feed_image, list_post_comments, new_session, session_user,
+    get_feed_image, list_post_comments, new_session, session_user, delete_own_comment,
 )
 from onemorerep.services.workout_service import save_activity
 
@@ -344,6 +344,13 @@ async def create_activity(request:Request,user:Annotated[dict,Depends(current_us
     return {"id":workout_id,"exp_earned":exp_amount,"duration_seconds":duration}
 
 
+@app.delete("/api/activities/{workout_id}")
+def delete_own_activity(workout_id:int,user:Annotated[dict,Depends(current_user)]):
+    if not admin_service.delete_workout(user["id"],workout_id):
+        raise HTTPException(status_code=404,detail="Activity not found.")
+    return {"deleted":True}
+
+
 @app.get("/api/activities/{workout_id}")
 def activity_detail(workout_id:int,user:Annotated[dict,Depends(current_user)]):
     try: return friend_service.workout_detail(user["id"],workout_id)
@@ -376,6 +383,13 @@ async def save_progress(
         report_id=media_service.save_progress_report(user["id"],report_date,weight_kg,notes,image_bytes,image_mime)
     except ValueError as exc: raise HTTPException(status_code=422,detail=str(exc)) from exc
     return {"id":report_id}
+
+
+@app.delete("/api/progress/{report_id}")
+def delete_own_progress(report_id:int,user:Annotated[dict,Depends(current_user)]):
+    if not admin_service.delete_progress(user["id"],report_id):
+        raise HTTPException(status_code=404,detail="Progress report not found.")
+    return {"deleted":True}
 
 
 @app.get("/api/progress/{report_id}/image")
@@ -449,6 +463,13 @@ async def share_to_feed(
     return {"id":post_id}
 
 
+@app.delete("/api/feed/{post_id}")
+def delete_own_feed_post(post_id:int,user:Annotated[dict,Depends(current_user)]):
+    if not admin_service.delete_post(user["id"],post_id):
+        raise HTTPException(status_code=404,detail="Post not found.")
+    return {"deleted":True}
+
+
 @app.get("/api/feed/{post_id}/image")
 def feed_image(post_id:int,user:Annotated[dict,Depends(current_user)]):
     item=get_feed_image(user["id"],post_id)
@@ -481,6 +502,13 @@ def comment_on_feed_post(post_id:int,payload:CommentIn,user:Annotated[dict,Depen
     except ValueError as exc:
         if str(exc)=="Post not found.": raise HTTPException(status_code=404,detail=str(exc)) from exc
         raise HTTPException(status_code=422,detail=str(exc)) from exc
+
+
+@app.delete("/api/feed/{post_id}/comments/{comment_id}")
+def delete_own_feed_comment(post_id:int,comment_id:int,user:Annotated[dict,Depends(current_user)]):
+    if not delete_own_comment(user["id"],post_id,comment_id):
+        raise HTTPException(status_code=404,detail="Your comment was not found.")
+    return {"deleted":True}
 
 
 # Keep API routes above the frontend fallback. Vercel then promotes the exported
