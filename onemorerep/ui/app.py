@@ -97,7 +97,7 @@ class OneMoreRepApp(tk.Tk):
         self.heading("EXP History"); rows=report_service.history(self.user["id"],True); self.table(("Date","Period","Activity","Duration (min)","EXP"),[(r["activity_date"],r["activity_period"].title(),r["workout_type"],round(r["duration"]/60),r["exp_amount"]) for r in rows])
     def show_leaderboard(self):
         self.heading("Leaderboard")
-        with connect() as c: rows=leaderboard_service.leaderboard(c)
+        with connect() as c: rows=leaderboard_service.leaderboard(c,self.user["id"])
         self.table(("Name","Total EXP","Weekly","Monthly","Current streak","Best streak","Workouts"),[(r["display_name"],r["total_exp"],r["weekly_exp"],r["monthly_exp"],r["current_streak"],r["longest_streak"],r["total_workouts"]) for r in rows])
     def show_stats(self):
         self.heading("Statistics"); s=report_service.statistics(self.user["id"])

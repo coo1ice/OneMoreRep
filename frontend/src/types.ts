@@ -3,7 +3,7 @@ export type AdminAccount = User & { created_at: string; workout_count: number; p
 export type AdminReport = {
   user: AdminAccount;
   workouts: Array<{ id:number; workout_type:string; workout_date:string; start_time:string; duration:number; notes:string; exp_amount:number|null; sport_name:string|null; walking:{distance:number;steps:number;calories:number;avg_speed:number}|null; exercises:Array<{exercise_name:string;weight:number;reps:number;sets:number}>; image_url:string|null }>;
-  progress_reports: Array<{ id:number; report_date:string; weight_kg:number; notes:string; image_url:string|null }>;
+  progress_reports: Array<{ id:number; report_date:string; notes:string; image_url:string|null }>;
   posts: Array<{ id:number; caption:string; created_at:string; workout_id:number|null; achievement_name:string|null; image_url:string|null; likes_count:number; comments_count:number }>;
   comments: Array<{ id:number; post_id:number; commenter:string; body:string; created_at:string }>;
   likes: Array<{ post_id:number; liker:string; created_at:string }>;
@@ -30,12 +30,13 @@ export type FeedPost = {
 };
 export type FeedComment = { id: number; user_id: number; display_name: string; body: string; created_at: string };
 export type ProgressReport = {
-  id: number; report_date: string; weight_kg: number; notes: string; image_url: string | null;
+  id: number; report_date: string; notes: string; image_url: string | null;
   created_at: string; updated_at: string;
 };
 export type Friend = { username: string; display_name: string };
 export type FriendRequest = Friend & { id: number };
 export type FriendList = { incoming: FriendRequest[]; outgoing: Friend[]; friends: Friend[] };
+export type FriendGroup = { id:number; name:string; owner_id:number; is_owner:boolean; members:Array<{id:number;username?:string;display_name?:string;is_me?:boolean}> };
 export type Statistics = {
   total_exp: number; total_workouts: number; strength_workouts: number;
   walking_sessions: number; sports_sessions: number; total_weight: number; total_distance: number;

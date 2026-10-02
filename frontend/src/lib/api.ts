@@ -1,4 +1,4 @@
-import type { Achievement, AdminAccount, AdminReport, Dashboard, ExpRecord, FeedComment, FeedPost, FriendList, LeaderboardRow, ProgressReport, Statistics, User, Workout, WorkoutDetail } from "@/types";
+import type { Achievement, AdminAccount, AdminReport, Dashboard, ExpRecord, FeedComment, FeedPost, FriendGroup, FriendList, LeaderboardRow, ProgressReport, Statistics, User, Workout, WorkoutDetail } from "@/types";
 
 const configuredApiBase = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
 const pointsToThisComputer = /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i.test(configuredApiBase || "");
@@ -29,7 +29,7 @@ export const api = {
   adminReport: (id: number) => request<AdminReport>(`/api/admin/users/${id}`),
   adminUpdateMember: (id:number, display_name:string) => request(`/api/admin/users/${id}`, { method:"PUT", body:JSON.stringify({display_name}) }),
   adminUpdateWorkout: (userId:number,id:number,payload:unknown) => request(`/api/admin/users/${userId}/workouts/${id}`, { method:"PUT", body:JSON.stringify(payload) }),
-  adminUpdateProgress: (userId:number,id:number,payload:{weight_kg:number;notes:string}) => request(`/api/admin/users/${userId}/progress/${id}`, { method:"PUT", body:JSON.stringify(payload) }),
+  adminUpdateProgress: (userId:number,id:number,payload:{notes:string}) => request(`/api/admin/users/${userId}/progress/${id}`, { method:"PUT", body:JSON.stringify(payload) }),
   adminUpdatePost: (userId:number,id:number,caption:string) => request(`/api/admin/users/${userId}/posts/${id}`, { method:"PUT", body:JSON.stringify({caption}) }),
   adminDeleteMember: (id:number) => request<{deleted:boolean}>(`/api/admin/users/${id}`, { method:"DELETE" }),
   adminDeleteWorkout: (userId:number,id:number) => request<{deleted:boolean}>(`/api/admin/users/${userId}/workouts/${id}`, { method:"DELETE" }),
@@ -46,7 +46,7 @@ export const api = {
   exp: () => request<ExpRecord[]>("/api/exp"),
   statistics: () => request<Statistics>("/api/statistics"),
   achievements: () => request<Achievement[]>("/api/achievements"),
-  leaderboard: () => request<LeaderboardRow[]>("/api/leaderboard"),
+  leaderboard: (groupId?:number|null) => request<LeaderboardRow[]>(`/api/leaderboard${groupId?`?group_id=${groupId}`:""}`),
   feed: () => request<FeedPost[]>("/api/feed"),
   like: (id: number) => request<{ liked: boolean; likes_count: number }>(`/api/feed/${id}/likes`, { method: "POST" }),
   unlike: (id: number) => request<{ liked: boolean; likes_count: number }>(`/api/feed/${id}/likes`, { method: "DELETE" }),
@@ -56,6 +56,11 @@ export const api = {
   saveProgress: (form: FormData) => request<{ id: number }>("/api/progress", { method: "POST", body: form }),
   deleteProgress: (id:number) => request<{deleted:boolean}>(`/api/progress/${id}`, { method:"DELETE" }),
   friends: () => request<FriendList>("/api/friends"),
+  groups: () => request<FriendGroup[]>("/api/groups"),
+  createGroup: (name:string) => request<FriendGroup>("/api/groups", {method:"POST",body:JSON.stringify({name})}),
+  addGroupMember: (groupId:number,username:string) => request(`/api/groups/${groupId}/members`, {method:"POST",body:JSON.stringify({username})}),
+  removeGroupMember: (groupId:number,memberId:number) => request(`/api/groups/${groupId}/members/${memberId}`, {method:"DELETE"}),
+  deleteGroup: (groupId:number) => request(`/api/groups/${groupId}`, {method:"DELETE"}),
   addFriend: (username: string) => request<{ status: string }>("/api/friends/requests", { method: "POST", body: JSON.stringify({ username }) }),
   respondFriend: (id: number, accept: boolean) => request<{ status: string }>(`/api/friends/requests/${id}`, { method: "POST", body: JSON.stringify({ accept }) }),
   createWorkout: (payload: unknown, photo?: File | null) => {

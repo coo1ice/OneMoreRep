@@ -29,7 +29,7 @@ def user_report(user_id):
             FROM workouts w LEFT JOIN exp_records e ON e.workout_id=w.id
             LEFT JOIN sports s ON s.workout_id=w.id LEFT JOIN workout_images wi ON wi.workout_id=w.id
             WHERE w.user_id=%s ORDER BY w.workout_date DESC,w.start_time DESC,w.id DESC""",(user_id,)).fetchall()
-        progress=conn.execute("""SELECT r.id,r.report_date,r.weight_kg,r.notes,r.created_at,
+        progress=conn.execute("""SELECT r.id,r.report_date,r.notes,r.created_at,
             (pi.report_id IS NOT NULL) has_image FROM progress_reports r
             LEFT JOIN progress_images pi ON pi.report_id=r.id WHERE r.user_id=%s
             ORDER BY r.report_date DESC,r.id DESC""",(user_id,)).fetchall()
@@ -128,15 +128,13 @@ def update_workout(user_id,workout_id,notes=None,exercises=None,walking=None,spo
     return True
 
 
-def update_progress(user_id,report_id,weight_kg,notes):
+def update_progress(user_id,report_id,notes):
     notes=(notes or "").strip()
-    if not 0<float(weight_kg)<=500:
-        raise ValueError("Weight must be greater than 0 and no more than 500 kg.")
     if len(notes)>1000:
         raise ValueError("Notes must be 1,000 characters or fewer.")
     with transaction() as conn:
-        row=conn.execute("UPDATE progress_reports SET weight_kg=%s,notes=%s,updated_at=now() WHERE id=%s AND user_id=%s RETURNING id",
-            (weight_kg,notes,report_id,user_id)).fetchone()
+        row=conn.execute("UPDATE progress_reports SET notes=%s,updated_at=now() WHERE id=%s AND user_id=%s RETURNING id",
+            (notes,report_id,user_id)).fetchone()
     return bool(row)
 
 

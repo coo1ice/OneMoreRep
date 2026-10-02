@@ -1,4 +1,8 @@
-def leaderboard(conn, user_id=None):
+from onemorerep.services.friend_group_service import member_ids
+
+
+def leaderboard(conn, user_id, group_id=None):
+    visible_ids = member_ids(conn, user_id, group_id)
     return conn.execute("""WITH exp_totals AS (
         SELECT user_id,sum(exp_amount) total_exp,
           sum(exp_amount) FILTER(WHERE activity_date>=current_date-6) weekly_exp,
@@ -13,4 +17,4 @@ def leaderboard(conn, user_id=None):
         coalesce(w.total_workouts,0) total_workouts
       FROM users u LEFT JOIN exp_totals e ON e.user_id=u.id
       LEFT JOIN streaks s ON s.user_id=u.id LEFT JOIN workout_totals w ON w.user_id=u.id
-      ORDER BY total_exp DESC,u.display_name""").fetchall()
+      WHERE u.id=ANY(%s) ORDER BY total_exp DESC,u.display_name""", (visible_ids,)).fetchall()

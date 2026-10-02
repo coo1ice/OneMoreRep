@@ -62,6 +62,14 @@ def initialize_schema():
             status TEXT NOT NULL CHECK(status IN ('pending','accepted','rejected')),
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(), CHECK(user1_id < user2_id), UNIQUE(user1_id,user2_id)
         )""",
+        """CREATE TABLE IF NOT EXISTS friend_groups (
+            id BIGSERIAL PRIMARY KEY, owner_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name TEXT NOT NULL CHECK(length(name) BETWEEN 1 AND 60),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(owner_id,name))""",
+        """CREATE TABLE IF NOT EXISTS friend_group_members (
+            group_id BIGINT NOT NULL REFERENCES friend_groups(id) ON DELETE CASCADE,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            joined_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY(group_id,user_id))""",
         """CREATE TABLE IF NOT EXISTS achievements (
             id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             badge_name TEXT NOT NULL, earned_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(user_id,badge_name)
@@ -88,7 +96,7 @@ def initialize_schema():
             created_at TIMESTAMPTZ NOT NULL DEFAULT now())""",
         """CREATE TABLE IF NOT EXISTS progress_reports (
             id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            report_date DATE NOT NULL, weight_kg NUMERIC(6,2) NOT NULL CHECK(weight_kg > 0 AND weight_kg <= 500),
+            report_date DATE NOT NULL, weight_kg NUMERIC(6,2) CHECK(weight_kg IS NULL OR (weight_kg > 0 AND weight_kg <= 500)),
             notes TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(user_id,report_date), CHECK(length(notes) <= 1000))""",
         """CREATE TABLE IF NOT EXISTS progress_images (
@@ -111,6 +119,8 @@ def initialize_schema():
         "CREATE INDEX IF NOT EXISTS idx_workouts_user_date ON workouts(user_id, workout_date)",
         "CREATE INDEX IF NOT EXISTS idx_exp_user_date ON exp_records(user_id, activity_date)",
         "CREATE INDEX IF NOT EXISTS idx_friendships_accepted ON friendships(user1_id,user2_id) WHERE status='accepted'",
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_friend_groups_owner_name ON friend_groups(owner_id,lower(name))",
+        "CREATE INDEX IF NOT EXISTS idx_friend_group_members_user ON friend_group_members(user_id,group_id)",
         "CREATE INDEX IF NOT EXISTS idx_feed_posts_created ON feed_posts(created_at DESC)",
         "CREATE INDEX IF NOT EXISTS idx_progress_reports_user_date ON progress_reports(user_id,report_date DESC)",
         "CREATE INDEX IF NOT EXISTS idx_feed_comments_post_created ON feed_comments(post_id,created_at)",
@@ -152,5 +162,6 @@ def initialize_schema():
             END IF;
         END $$""")
         conn.execute("ALTER TABLE feed_posts ADD COLUMN IF NOT EXISTS achievement_id BIGINT REFERENCES achievements(id) ON DELETE SET NULL")
+        conn.execute("ALTER TABLE progress_reports ALTER COLUMN weight_kg DROP NOT NULL")
         conn.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS request_from BIGINT REFERENCES users(id) ON DELETE CASCADE")
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_streaks_user_unique ON streaks(user_id)")

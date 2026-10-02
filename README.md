@@ -1,6 +1,6 @@
 # OneMoreRep
 
-OneMoreRep is a web-based workout log and private friends community. It records strength, walking, and sports sessions; tracks daily weight and progress photos; awards EXP; and lets accepted friends share updates in a private feed.
+OneMoreRep is a web-based workout log and private friends community. It records strength, walking, and sports sessions; keeps private progress notes and photos; awards EXP; and lets accepted friends share updates in a private feed.
 
 ## Local setup
 
@@ -57,13 +57,14 @@ For a separate PostgreSQL installation, create a UTF-8 database named `onemorere
 
 - Register and sign in with bcrypt-hashed passwords and server-side sessions.
 - Record strength, walking, and sports activities, with an optional private workout photo.
-- Log daily weight, notes, and optional private fitness photos in progress reports.
+- Keep private progress reports with optional notes and fitness photos; weight is not required or displayed.
 - Earn capped morning/evening EXP and track activity streaks.
 - Send, accept, and manage friend requests.
+- Organize accepted friends into private groups and view leaderboards for a group or all of your friends.
 - Share workout summaries, selected workout photos, screenshots, or achievements in a feed limited to you and accepted friends.
 - Like friends' posts and comment on them.
 - Use role-based access control: regular accounts see their own private records, while administrator accounts can review, edit, and delete member records in a separate console.
-- Browse history, EXP, leaderboard, statistics, and profile.
+- Browse history, EXP, friend leaderboards, statistics, and profile.
 
 ### Administrator access
 

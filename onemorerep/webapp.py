@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, ValidationError
 import config
 from onemorerep import auth
 from onemorerep.database import connect, initialize_schema, transaction
-from onemorerep.services import achievement_service, admin_service, friend_service, leaderboard_service, media_service, report_service
+from onemorerep.services import achievement_service, admin_service, friend_group_service, friend_service, leaderboard_service, media_service, report_service
 from onemorerep.services.web_service import (
     add_post_comment, change_post_like, create_feed_post, end_session, get_feed,
     get_feed_image, list_post_comments, new_session, session_user, delete_own_comment,
@@ -84,6 +84,12 @@ class FriendRequestIn(BaseModel):
 class FriendResponseIn(BaseModel):
     accept:bool
 
+class FriendGroupIn(BaseModel):
+    name:str=Field(min_length=1,max_length=60)
+
+class FriendGroupMemberIn(BaseModel):
+    username:str=Field(min_length=1,max_length=40)
+
 class CommentIn(BaseModel):
     body:str=Field(min_length=1,max_length=500)
 
@@ -91,7 +97,6 @@ class AdminMemberUpdate(BaseModel):
     display_name:str=Field(min_length=1,max_length=80)
 
 class AdminProgressUpdate(BaseModel):
-    weight_kg:float=Field(gt=0,le=500)
     notes:str=Field(default="",max_length=1000)
 
 class AdminPostUpdate(BaseModel):
@@ -249,7 +254,7 @@ def delete_admin_workout(user_id:int,workout_id:int,_admin:Annotated[dict,Depend
 
 @app.put("/api/admin/users/{user_id}/progress/{report_id}")
 def update_admin_progress(user_id:int,report_id:int,payload:AdminProgressUpdate,_admin:Annotated[dict,Depends(admin_user)]):
-    try: updated=admin_service.update_progress(user_id,report_id,payload.weight_kg,payload.notes)
+    try: updated=admin_service.update_progress(user_id,report_id,payload.notes)
     except ValueError as exc: raise HTTPException(status_code=422,detail=str(exc)) from exc
     if not updated: raise HTTPException(status_code=404,detail="Progress report not found.")
     return {"updated":True}
@@ -373,13 +378,12 @@ def progress_reports(user:Annotated[dict,Depends(current_user)]):
 async def save_progress(
     user:Annotated[dict,Depends(current_user)],
     report_date:Annotated[date,Form()],
-    weight_kg:Annotated[float,Form(gt=0,le=500)],
     notes:Annotated[str,Form(max_length=1000)]="",
     photo:Annotated[UploadFile|None,File()]=None,
 ):
     image_bytes,image_mime=await _read_image(photo)
     try:
-        report_id=media_service.save_progress_report(user["id"],report_date,weight_kg,notes,image_bytes,image_mime)
+        report_id=media_service.save_progress_report(user["id"],report_date,notes,image_bytes,image_mime)
     except ValueError as exc: raise HTTPException(status_code=422,detail=str(exc)) from exc
     return {"id":report_id}
 
@@ -405,9 +409,10 @@ def exp_history(user:Annotated[dict,Depends(current_user)]):
 
 
 @app.get("/api/leaderboard")
-def leaderboard(user:Annotated[dict,Depends(current_user)]):
-    with connect() as conn: rows=leaderboard_service.leaderboard(conn)
-    return rows
+def leaderboard(user:Annotated[dict,Depends(current_user)],group_id:int|None=None):
+    try:
+        with connect() as conn: return leaderboard_service.leaderboard(conn,user["id"],group_id)
+    except ValueError as exc: raise HTTPException(status_code=404,detail=str(exc)) from exc
 
 
 @app.get("/api/statistics")
@@ -424,6 +429,37 @@ def achievements(user:Annotated[dict,Depends(current_user)]):
 def friends(user:Annotated[dict,Depends(current_user)]):
     incoming,outgoing,accepted=friend_service.requests_and_friends(user["id"])
     return {"incoming":incoming,"outgoing":outgoing,"friends":accepted}
+
+
+@app.get("/api/groups")
+def friend_groups(user:Annotated[dict,Depends(current_user)]):
+    return friend_group_service.list_groups(user["id"])
+
+
+@app.post("/api/groups",status_code=201)
+def create_friend_group(payload:FriendGroupIn,user:Annotated[dict,Depends(current_user)]):
+    try: return friend_group_service.create_group(user["id"],payload.name)
+    except ValueError as exc: raise HTTPException(status_code=422,detail=str(exc)) from exc
+
+
+@app.post("/api/groups/{group_id}/members",status_code=201)
+def add_friend_group_member(group_id:int,payload:FriendGroupMemberIn,user:Annotated[dict,Depends(current_user)]):
+    try: return friend_group_service.add_member(user["id"],group_id,payload.username)
+    except ValueError as exc: raise HTTPException(status_code=409,detail=str(exc)) from exc
+
+
+@app.delete("/api/groups/{group_id}/members/{member_id}")
+def remove_friend_group_member(group_id:int,member_id:int,user:Annotated[dict,Depends(current_user)]):
+    try: friend_group_service.remove_member(user["id"],group_id,member_id)
+    except ValueError as exc: raise HTTPException(status_code=404,detail=str(exc)) from exc
+    return {"removed":True}
+
+
+@app.delete("/api/groups/{group_id}")
+def delete_friend_group(group_id:int,user:Annotated[dict,Depends(current_user)]):
+    try: friend_group_service.delete_group(user["id"],group_id)
+    except ValueError as exc: raise HTTPException(status_code=404,detail=str(exc)) from exc
+    return {"deleted":True}
 
 
 @app.post("/api/friends/requests",status_code=201)

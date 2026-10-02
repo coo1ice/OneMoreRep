@@ -96,20 +96,18 @@ def get_workout_image(user_id, workout_id):
         (workout_id, user_id))
 
 
-def save_progress_report(user_id, report_date: date, weight_kg: float, notes: str, image_bytes=None, mime_type=None):
+def save_progress_report(user_id, report_date: date, notes: str, image_bytes=None, mime_type=None):
     notes = (notes or "").strip()
-    if not 0 < float(weight_kg) <= 500:
-        raise ValueError("Weight must be greater than 0 and no more than 500 kg.")
     if len(notes) > 1000:
         raise ValueError("Notes must be 1,000 characters or fewer.")
     storage_key = store_image_file(image_bytes, mime_type) if image_bytes else None
     previous_key = None
     try:
         with transaction() as conn:
-            report = conn.execute("""INSERT INTO progress_reports(user_id,report_date,weight_kg,notes)
-                VALUES(%s,%s,%s,%s) ON CONFLICT(user_id,report_date) DO UPDATE SET
-                weight_kg=EXCLUDED.weight_kg,notes=EXCLUDED.notes,updated_at=now()
-                RETURNING id""", (user_id, report_date, weight_kg, notes)).fetchone()
+            report = conn.execute("""INSERT INTO progress_reports(user_id,report_date,notes)
+                VALUES(%s,%s,%s) ON CONFLICT(user_id,report_date) DO UPDATE SET
+                notes=EXCLUDED.notes,updated_at=now()
+                RETURNING id""", (user_id, report_date, notes)).fetchone()
             if storage_key:
                 previous = conn.execute("SELECT storage_key FROM progress_images WHERE report_id=%s", (report["id"],)).fetchone()
                 previous_key = previous["storage_key"] if previous else None
@@ -128,7 +126,7 @@ def save_progress_report(user_id, report_date: date, weight_kg: float, notes: st
 
 def list_progress_reports(user_id):
     with connect() as conn:
-        rows = conn.execute("""SELECT r.id,r.report_date,r.weight_kg,r.notes,r.created_at,r.updated_at,
+        rows = conn.execute("""SELECT r.id,r.report_date,r.notes,r.created_at,r.updated_at,
             (i.report_id IS NOT NULL) has_image FROM progress_reports r
             LEFT JOIN progress_images i ON i.report_id=r.id
             WHERE r.user_id=%s ORDER BY r.report_date DESC,r.id DESC""", (user_id,)).fetchall()

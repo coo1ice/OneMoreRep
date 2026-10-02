@@ -12,7 +12,14 @@ def dashboard(user_id, conn=None):
             JOIN workouts w ON w.id=e.workout_id WHERE e.user_id=%s AND e.activity_date=current_date""",(user_id,)).fetchall()
         today_workouts=c.execute("""SELECT start_time,duration FROM workouts
             WHERE user_id=%s AND workout_date=current_date ORDER BY start_time DESC,id DESC""",(user_id,)).fetchall()
-        ranks=c.execute("""SELECT u.id user_id,rank() over(order by coalesce(sum(e.exp_amount),0) desc) rank FROM users u LEFT JOIN exp_records e ON e.user_id=u.id GROUP BY u.id""").fetchall()
+        ranks=c.execute("""WITH circle AS (
+            SELECT %s::bigint user_id UNION
+            SELECT CASE WHEN user1_id=%s THEN user2_id ELSE user1_id END
+            FROM friendships WHERE status='accepted' AND (user1_id=%s OR user2_id=%s)
+          ), totals AS (SELECT c.user_id,coalesce(sum(e.exp_amount),0) total_exp
+            FROM circle c LEFT JOIN exp_records e ON e.user_id=c.user_id GROUP BY c.user_id)
+          SELECT user_id,rank() OVER(ORDER BY total_exp DESC) rank FROM totals""",
+          (user_id,user_id,user_id,user_id)).fetchall()
     by={"morning":{"exp":0,"duration":0},"evening":{"exp":0,"duration":0}}
     for workout in today_workouts:
         period=activity_period(workout["start_time"])
