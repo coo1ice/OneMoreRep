@@ -171,7 +171,7 @@ export function OneMoreRepApp() {
   }
 
   if (!bootstrapped || (user && !pathname.startsWith('/dashboard')) || (!user && pathname !== '/login')) {
-    return <main className="route-loading" aria-label="Loading"><LoaderCircle size={24} className="spin" /></main>;
+    return <LoadingSkeleton />;
   }
 
   if (!user) {
@@ -219,6 +219,18 @@ export function OneMoreRepApp() {
       </div>
     </div>
   );
+}
+
+function LoadingSkeleton() {
+  return <main className="route-skeleton" role="status" aria-label="Loading OneMoreRep">
+    <header className="skeleton-topbar"><div className="skeleton-brand"><span className="skeleton-shape skeleton-logo"/><span className="skeleton-brand-copy"><i className="skeleton-shape"/><i className="skeleton-shape"/></span></div><div className="skeleton-tools"><i className="skeleton-shape"/><i className="skeleton-shape"/></div></header>
+    <div className="skeleton-workspace"><aside className="skeleton-sidebar"><i className="skeleton-shape skeleton-label"/>{Array.from({length:7},(_,i)=><i className="skeleton-shape skeleton-nav-row" key={i}/>)}</aside>
+      <section className="skeleton-content"><div className="skeleton-heading"><div><i className="skeleton-shape skeleton-label"/><i className="skeleton-shape skeleton-title"/><i className="skeleton-shape skeleton-subtitle"/></div><i className="skeleton-shape skeleton-action"/></div>
+        <div className="skeleton-metrics">{Array.from({length:3},(_,i)=><div className="skeleton-shape skeleton-metric" key={i}/>)}</div>
+        <div className="skeleton-columns"><section className="skeleton-shape skeleton-panel"><i className="skeleton-shape skeleton-panel-title"/><i className="skeleton-shape skeleton-line"/><i className="skeleton-shape skeleton-line short"/><i className="skeleton-shape skeleton-line"/></section><section className="skeleton-shape skeleton-panel"><i className="skeleton-shape skeleton-panel-title"/><i className="skeleton-shape skeleton-line"/><i className="skeleton-shape skeleton-line"/><i className="skeleton-shape skeleton-line short"/></section></div>
+      </section>
+    </div>
+  </main>;
 }
 
 function initials(name: string) { return name.trim().split(/\s+/).slice(0, 2).map((s) => s[0]?.toUpperCase() || '').join(''); }
