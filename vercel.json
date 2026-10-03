@@ -1,5 +1,7 @@
 {
-  "buildCommand": "cd frontend && npm ci && npm run build && cd .. && mkdir -p public && cp -R frontend/out/_next public/",
+  "cleanUrls": true,
+  "buildCommand": "cd frontend && npm ci && npm run build",
+  "outputDirectory": "frontend/out",
   "headers": [
     {
       "source": "/",
