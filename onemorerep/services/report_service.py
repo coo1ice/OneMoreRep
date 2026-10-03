@@ -81,4 +81,4 @@ def statistics(user_id):
         (SELECT coalesce(sum(longest_streak_delta),0) FROM exp_adjustments WHERE user_id=%s) longest_streak,
         coalesce((SELECT CASE WHEN last_workout_date>=current_date-1 THEN current_streak ELSE 0 END FROM streaks WHERE user_id=%s),0) +
         (SELECT coalesce(sum(current_streak_delta),0) FROM exp_adjustments WHERE user_id=%s) current_streak""",
-        (user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id)).fetchone()
+        (user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id,user_id)).fetchone()
