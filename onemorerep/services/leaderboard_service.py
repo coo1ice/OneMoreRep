@@ -23,7 +23,8 @@ def leaderboard(conn, user_id, group_id=None):
         LEFT JOIN (SELECT user_id,sum(workout_delta) workout_delta,
           sum(current_streak_delta) current_streak_delta,sum(longest_streak_delta) longest_streak_delta
           FROM exp_adjustments GROUP BY user_id) a ON a.user_id=u.id
-        GROUP BY u.id,s.current_streak,s.longest_streak,a.workout_delta,a.current_streak_delta,a.longest_streak_delta
+        GROUP BY u.id,s.current_streak,s.longest_streak,s.last_workout_date,
+          a.workout_delta,a.current_streak_delta,a.longest_streak_delta
       )
       SELECT u.id,u.display_name,coalesce(e.total_exp,0) total_exp,
         coalesce(e.weekly_exp,0) weekly_exp,coalesce(e.monthly_exp,0) monthly_exp,
