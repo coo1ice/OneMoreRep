@@ -12,7 +12,7 @@ _USER_SUMMARY = """SELECT u.id,u.username,u.display_name,u.role,u.created_at,
       coalesce((SELECT sum(x.amount+x.weekly_amount) FROM exp_adjustments x WHERE x.user_id=u.id AND x.created_at::date>=current_date-6),0) weekly_exp,
     coalesce((SELECT sum(e.exp_amount) FROM exp_records e WHERE e.user_id=u.id AND date_trunc('month',e.activity_date)=date_trunc('month',current_date)),0) +
       coalesce((SELECT sum(x.amount+x.monthly_amount) FROM exp_adjustments x WHERE x.user_id=u.id AND date_trunc('month',x.created_at)=date_trunc('month',current_timestamp)),0) monthly_exp,
-    coalesce((SELECT s.current_streak FROM streaks s WHERE s.user_id=u.id),0) +
+    coalesce((SELECT CASE WHEN s.last_workout_date>=current_date-1 THEN s.current_streak ELSE 0 END FROM streaks s WHERE s.user_id=u.id),0) +
       coalesce((SELECT sum(x.current_streak_delta) FROM exp_adjustments x WHERE x.user_id=u.id),0) current_streak,
     coalesce((SELECT s.longest_streak FROM streaks s WHERE s.user_id=u.id),0) +
       coalesce((SELECT sum(x.longest_streak_delta) FROM exp_adjustments x WHERE x.user_id=u.id),0) longest_streak,

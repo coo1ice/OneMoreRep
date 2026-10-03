@@ -36,7 +36,7 @@ def save_activity(user_id, kind, activity_date, start_time, end_time, notes="", 
                 conn.execute("INSERT INTO workout_images(workout_id,storage_key,mime_type,size_bytes) VALUES(%s,%s,%s,%s)",
                              (workout_id,storage_key,workout_image_mime,len(workout_image_bytes)))
             exp=award_exp(conn,user_id,workout_id,activity_date,start,duration)
-            if exp: update_streak(conn,user_id)
+            update_streak(conn,user_id)
             sync_achievements(conn,user_id)
     except Exception:
         if storage_key: remove_stored_image(storage_key)

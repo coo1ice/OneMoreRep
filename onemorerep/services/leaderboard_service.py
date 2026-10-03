@@ -15,7 +15,8 @@ def leaderboard(conn, user_id, group_id=None):
         FROM exp_rows GROUP BY user_id
       ), workout_totals AS (
         SELECT u.id user_id,count(w.id)+coalesce(a.workout_delta,0) total_workouts,
-          coalesce(s.current_streak,0)+coalesce(a.current_streak_delta,0) current_streak,
+          CASE WHEN s.last_workout_date>=current_date-1 THEN coalesce(s.current_streak,0) ELSE 0 END+
+            coalesce(a.current_streak_delta,0) current_streak,
           coalesce(s.longest_streak,0)+coalesce(a.longest_streak_delta,0) longest_streak
         FROM users u LEFT JOIN workouts w ON w.user_id=u.id
         LEFT JOIN streaks s ON s.user_id=u.id
