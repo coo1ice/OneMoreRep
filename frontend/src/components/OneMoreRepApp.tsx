@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { API_BASE, api } from '@/lib/api';
 import { prepareImage } from '@/lib/image';
-import type { Achievement, AdminAccount, AdminReport, Dashboard, ExpRecord, FeedComment, FeedPost, Friend, FriendGroup, FriendList, LeaderboardChanges, LeaderboardRow, ProgressReport, Statistics, User, Workout, WorkoutDetail } from '@/types';
+import type { Achievement, AdminAccount, AdminReport, Dashboard, ExpRecord, FeedComment, FeedPost, Friend, FriendGroup, FriendList, FriendRequest, LeaderboardChanges, LeaderboardRow, ProgressReport, Statistics, User, Workout, WorkoutDetail } from '@/types';
 
 type View = 'dashboard' | 'feed' | 'activity' | 'progress' | 'friends' | 'history' | 'exp' | 'leaderboard' | 'statistics' | 'profile' | 'admin';
 type Exercise = { exercise_name: string; weight: string; reps: string; sets: string };
@@ -88,6 +88,7 @@ export function OneMoreRepApp() {
       setWorkouts(initial.workouts);
       initialDashboardLoaded.current = true;
       setUser(initial.user);
+      void api.friends().then(setFriendList).catch(() => setFriendList({incoming:[],outgoing:[],friends:[]}));
     }).catch(() => setUser(null)).finally(() => setBootstrapped(true));
   }, []);
 
@@ -108,7 +109,7 @@ export function OneMoreRepApp() {
     setBusy(true); setError('');
     try {
       if (selected === 'dashboard') {
-        const [d, f, w] = await Promise.all([api.dashboard(), api.feed(), api.workouts()]); setDashboard(d); setPosts(f); setWorkouts(w);
+        const [d, f, w, friends] = await Promise.all([api.dashboard(), api.feed(), api.workouts(), api.friends()]); setDashboard(d); setPosts(f); setWorkouts(w); setFriendList(friends);
       } else if (selected === 'feed') {
         const [f, w, a] = await Promise.all([api.feed(), api.workouts(), api.achievements()]); setPosts(f); setWorkouts(w); setAchievements(a);
       } else if (selected === 'activity' || selected === 'history') setWorkouts(await api.workouts());
@@ -174,6 +175,14 @@ export function OneMoreRepApp() {
     router.push(next === 'dashboard' ? '/dashboard' : `/${next}`);
   }
 
+  async function respondToFriendRequest(id:number,accept:boolean) {
+    try {
+      await api.respondFriend(id,accept);
+      setFriendList(await api.friends());
+      setNotice(accept?'Friend request accepted.':'Friend request declined.');
+    } catch (e) { setError(e instanceof Error?e.message:'Could not update the friend request.'); }
+  }
+
   if (!bootstrapped || (user && !isAppRoute(pathname)) || (!user && pathname !== '/login')) {
     return <LoadingSkeleton />;
   }
@@ -207,7 +216,7 @@ export function OneMoreRepApp() {
           {error && <div className="error-banner">{error}<button onClick={() => setError('')} aria-label="Dismiss"><X size={15} /></button></div>}
           {busy && <div className="loading-line"><LoaderCircle size={16} className="spin" /> Loading your activity…</div>}
           <div key={view} className="view-transition">
-            {view === 'dashboard' && <DashboardView data={dashboard} workouts={workouts} posts={posts.slice(0, 3)} userId={user.id} onDeletePost={deleteOwnPost} onNavigate={selectView} />}
+            {view === 'dashboard' && <DashboardView data={dashboard} workouts={workouts} posts={posts.slice(0, 3)} friendRequests={friendList?.incoming??[]} userId={user.id} onDeletePost={deleteOwnPost} onRespondFriend={respondToFriendRequest} onNavigate={selectView} />}
             {view === 'feed' && <FeedView posts={posts} workouts={workouts} achievements={achievements} userId={user.id} onDeletePost={deleteOwnPost} onShare={async (form) => { const result = await api.share(form); setNotice('Shared with your friends.'); await loadView('feed'); return result.id; }} />}
             {view === 'activity' && <ActivityView onSave={async (payload, photo) => { const result = await api.createWorkout(payload, photo); setNotice(`Activity saved · ${durationLabel(result.duration_seconds)} · +${result.exp_earned} EXP`); await loadView('activity'); }} />}
             {view === 'progress' && <ProgressView reports={progressReports} onDelete={deleteOwnProgress} onSave={async (form) => { await api.saveProgress(form); setNotice('Progress report saved to your private records.'); await loadView('progress'); }} />}
@@ -255,14 +264,25 @@ function MetricCard({ icon:Icon, label, value, note, tone='navy' }: { icon:typeo
   return <div className="metric-card"><span className={`metric-icon ${tone}`}><Icon size={19} /></span><span className="metric-label">{label}</span><strong>{value}</strong><small>{note}</small></div>;
 }
 
-function DashboardView({ data, workouts, posts, userId, onDeletePost, onNavigate }: { data:Dashboard|null; workouts:Workout[]; posts:FeedPost[]; userId:number; onDeletePost:(id:number)=>void; onNavigate:(v:View)=>void }) {
+function DashboardView({ data, workouts, posts, friendRequests, userId, onDeletePost, onRespondFriend, onNavigate }: { data:Dashboard|null; workouts:Workout[]; posts:FeedPost[]; friendRequests:FriendRequest[]; userId:number; onDeletePost:(id:number)=>void; onRespondFriend:(id:number,accept:boolean)=>Promise<void>; onNavigate:(v:View)=>void }) {
   const current = data?.streak?.current_streak ?? 0;
   return <><PageHeading eyebrow="YOUR PROGRESS" title={`Good to see you${data?.name ? `, ${data.name.split(' ')[0]}` : ''}.`} subtitle="A little consistency adds up. Here’s how you’re doing." action={<button className="primary-button" onClick={() => onNavigate('activity')}><Plus size={17} /> Log activity</button>} />
     <section className="metric-grid"><MetricCard icon={Flame} label="Current streak" value={`${current} days`} note={`Personal best · ${data?.streak?.longest_streak ?? 0} days`} tone="orange" /><MetricCard icon={Sparkles} label="Total EXP" value={(data?.total ?? 0).toLocaleString()} note="Every qualifying session counts" tone="green" /><MetricCard icon={Trophy} label="Today’s EXP" value={`${data?.today ?? 0} / 50`} note="Daily cap · 30 morning + 20 evening" /><MetricCard icon={Users} label="Friends rank" value={data?.rank ? `#${data.rank}` : '—'} note="Among all your friends" tone="blue" /></section>
+    {friendRequests.length>0&&<DashboardFriendRequests requests={friendRequests} onRespond={onRespondFriend} onViewFriends={()=>onNavigate('friends')}/>}
     <div className="dashboard-grid"><section className="panel today-panel"><div className="panel-heading"><div><span className="panel-kicker">TODAY</span><h2>Your daily check-in</h2></div><span className="date-chip">{new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</span></div><PeriodStatus icon="🌅" label="Morning" points={30} amount={data?.morning ?? 0} duration={data?.morning_duration ?? 0} /><PeriodStatus icon="🌆" label="Evening" points={20} amount={data?.evening ?? 0} duration={data?.evening_duration ?? 0} /><div className="daily-footnote"><ShieldCheck size={15} /> One qualifying session per period · 50 EXP maximum per day</div></section>
       <section className="panel activity-panel"><div className="panel-heading"><div><span className="panel-kicker">RECENT WORK</span><h2>Latest activity</h2></div><button className="text-button" onClick={() => onNavigate('history')}>View history <ChevronRight size={15} /></button></div>{workouts.slice(0,4).map((w)=><WorkoutRow key={w.id} workout={w} />)}{!workouts.length && <EmptyState icon={Activity} title="Your story starts here" text="Log your first activity to start building momentum." action="Log activity" onClick={()=>onNavigate('activity')} />}</section></div>
     <section className="panel mini-feed"><div className="panel-heading"><div><span className="panel-kicker">YOUR GROUP</span><h2>Friends feed</h2></div><button className="text-button" onClick={()=>onNavigate('feed')}>Open feed <ChevronRight size={15} /></button></div>{posts.length ? <div className="mini-feed-list">{posts.map(p=><FeedCard key={p.id} post={p} currentUserId={userId} onDeletePost={onDeletePost} />)}</div> : <div className="friend-empty"><Users size={20}/><span>Your friends’ shared workouts will show here.</span><button className="text-button" onClick={()=>onNavigate('friends')}>Find friends <ChevronRight size={15}/></button></div>}</section>
   </>;
+}
+
+function DashboardFriendRequests({requests,onRespond,onViewFriends}:{requests:FriendRequest[];onRespond:(id:number,accept:boolean)=>Promise<void>;onViewFriends:()=>void}) {
+  const [busyId,setBusyId]=useState<number|null>(null);
+  async function respond(id:number,accept:boolean) {
+    setBusyId(id);
+    try { await onRespond(id,accept); }
+    finally { setBusyId(null); }
+  }
+  return <section className="panel request-panel dashboard-requests"><div className="panel-heading"><div><span className="panel-kicker">YOUR CIRCLE</span><h2>Friend requests <span className="count-pill">{requests.length}</span></h2></div><button className="text-button" onClick={onViewFriends}>View friends <ChevronRight size={15}/></button></div><div className="friend-list">{requests.map(request=><div className="friend-row request-row" key={request.id}><span className="avatar">{initials(request.display_name)}</span><div><b>{request.display_name}</b><small>@{request.username}</small></div><div className="request-actions"><button className="accept-button" disabled={busyId!==null} aria-label={`Accept ${request.display_name}`} onClick={()=>void respond(request.id,true)}><Check size={15}/></button><button className="decline-button" disabled={busyId!==null} aria-label={`Decline ${request.display_name}`} onClick={()=>void respond(request.id,false)}><X size={15}/></button></div></div>)}</div></section>;
 }
 
 function PeriodStatus({ icon, label, points, amount, duration }: { icon:string; label:string; points:number; amount:number; duration:number }) {
