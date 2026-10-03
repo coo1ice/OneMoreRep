@@ -9,6 +9,7 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request,
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, ValidationError
+import psycopg
 
 import config
 from onemorerep import auth
@@ -70,6 +71,10 @@ async def check_mutation_origin(request:Request,call_next):
 @app.exception_handler(Exception)
 async def safe_server_error(_request,exc):
     logger.exception("Unhandled OneMoreRep API error",exc_info=exc)
+    if isinstance(exc, psycopg.OperationalError):
+        return JSONResponse(status_code=503,content={
+            "detail":"Database unavailable. Check DATABASE_URL or the ONEMOREREP_DB_* deployment settings."
+        })
     return JSONResponse(status_code=500,content={"detail":"The request could not be completed."})
 
 

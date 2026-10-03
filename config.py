@@ -10,6 +10,7 @@ except ImportError:
 if load_dotenv:
     load_dotenv(Path(__file__).parent / ".env")
 
+DATABASE_URL = os.getenv("DATABASE_URL", os.getenv("POSTGRES_URL", "")).strip()
 DB_HOST = os.getenv("ONEMOREREP_DB_HOST", "127.0.0.1")
 DB_PORT = int(os.getenv("ONEMOREREP_DB_PORT", "5432"))
 DB_USER = os.getenv("ONEMOREREP_DB_USER", "postgres")

@@ -99,7 +99,7 @@ Before deploying, create a Supabase project and a **private** Storage bucket nam
 
 Configure these Vercel project environment variables for Production (and Preview if needed):
 
-- `ONEMOREREP_DB_HOST`, `ONEMOREREP_DB_PORT`, `ONEMOREREP_DB_USER`, `ONEMOREREP_DB_PASSWORD`, `ONEMOREREP_DB_NAME` for the hosted PostgreSQL database.
+- Either `DATABASE_URL` (or Vercel's `POSTGRES_URL`) with the Supabase Transaction pooler URI, or `ONEMOREREP_DB_HOST`, `ONEMOREREP_DB_PORT`, `ONEMOREREP_DB_USER`, `ONEMOREREP_DB_PASSWORD`, `ONEMOREREP_DB_NAME` for the hosted PostgreSQL database. The URI setting takes precedence when both are configured.
 - `ONEMOREREP_MEDIA_STORAGE=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and optionally `SUPABASE_STORAGE_BUCKET=onemorerep-private` for private image storage. Keep the secret key only as a server environment variable; never add it to frontend `NEXT_PUBLIC_*` variables.
 - `ONEMOREREP_COOKIE_SECURE=true` so sign-in cookies are sent only over HTTPS.
 - `ONEMOREREP_CORS_ORIGINS` set to the exact deployed site origin if frontend and API are later split across different domains. With the included same-origin `/api/*` routing, cross-origin requests are not needed.
