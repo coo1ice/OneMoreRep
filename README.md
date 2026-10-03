@@ -59,6 +59,7 @@ For a separate PostgreSQL installation, create a UTF-8 database named `onemorere
 - Record strength, walking, and sports activities, with an optional private workout photo.
 - Keep private progress reports with optional notes and fitness photos; weight is not required or displayed.
 - Earn capped morning/evening EXP and track activity streaks.
+- Backdated workouts can earn EXP but do not restore or extend a streak.
 - Send, accept, and manage friend requests.
 - Organize accepted friends into private groups and view leaderboards for a group or all of your friends.
 - Share workout summaries, selected workout photos, screenshots, or achievements in a feed limited to you and accepted friends.
@@ -76,7 +77,7 @@ python -m onemorerep.admin your_username admin
 
 The command uses the configured PostgreSQL database. Sign out and back in after changing a role; administrators then see the Admin item in the sidebar. Admin edit and delete routes independently enforce the role on every request. Account deletion removes that account's associated records and uploaded photos; the signed-in administrator and last admin account are protected from deletion. To revoke admin access, run the same command with `user` instead of `admin`.
 
-Image uploads accept JPEG, PNG, or WebP up to 8 MB. Local uploads are stored under `uploads/`; use persistent/object storage when deploying.
+Image uploads accept JPEG, PNG, or WebP and are automatically resized/compressed to a maximum of 2 MB. Local uploads are stored under `uploads/`; use persistent/object storage when deploying.
 
 ## Tests
 

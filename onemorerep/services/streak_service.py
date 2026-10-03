@@ -9,10 +9,10 @@ def streak_lengths(dates):
     return run, best
 
 def update_streak(conn, user_id):
-    """Recompute streaks from logged workout days, including backfilled days."""
+    """Recompute streaks from eligible workout days, excluding backfilled logs."""
     conn.execute("SELECT user_id FROM streaks WHERE user_id=%s FOR UPDATE", (user_id,)).fetchone()
     dates = [r["activity_date"] for r in conn.execute(
-        "SELECT DISTINCT workout_date activity_date FROM workouts WHERE user_id=%s ORDER BY workout_date", (user_id,)).fetchall()]
+        "SELECT DISTINCT workout_date activity_date FROM workouts WHERE user_id=%s AND streak_eligible=TRUE ORDER BY workout_date", (user_id,)).fetchall()]
     today = conn.execute("SELECT current_date today").fetchone()["today"]
     trailing, longest = streak_lengths(dates)
     current = trailing if dates and dates[-1] >= today - timedelta(days=1) else 0

@@ -17,8 +17,10 @@ def save_activity(user_id, kind, activity_date, start_time, end_time, notes="", 
     storage_key=store_image_file(workout_image_bytes,workout_image_mime) if workout_image_bytes else None
     try:
         with transaction() as conn:
-            row=conn.execute("""INSERT INTO workouts(user_id,workout_type,workout_date,start_time,end_time,duration,notes)
-              VALUES(%s,%s,%s,%s,%s,%s,%s) RETURNING id""",(user_id,kind,activity_date,start,end,int(duration.total_seconds()),notes.strip())).fetchone()
+            today=conn.execute("SELECT current_date today").fetchone()["today"]
+            row=conn.execute("""INSERT INTO workouts(user_id,workout_type,workout_date,start_time,end_time,duration,notes,streak_eligible)
+              VALUES(%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+              (user_id,kind,activity_date,start,end,int(duration.total_seconds()),notes.strip(),activity_date>=today)).fetchone()
             workout_id=row["id"]
             if kind=="Strength":
                 if not exercises: raise ValueError("Add at least one exercise.")

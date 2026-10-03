@@ -1,7 +1,7 @@
 import unittest
 from datetime import date, time, timedelta
 from onemorerep.services.exp_service import activity_period, award_exp, calculate_exp, get_daily_exp, qualifies_for_period
-from onemorerep.services.streak_service import streak_lengths
+from onemorerep.services.streak_service import streak_lengths, update_streak
 
 class ExpTests(unittest.TestCase):
     def test_cutoff(self):
@@ -56,5 +56,27 @@ class StreakTests(unittest.TestCase):
         self.assertEqual(streak_lengths([d,d+timedelta(days=2)]),(1,1))
         self.assertEqual(streak_lengths([d,d+timedelta(days=1),d+timedelta(days=3)]),(1,2))
         self.assertEqual(streak_lengths([d,d,d+timedelta(days=1)]),(2,2))
+
+    def test_backfilled_workout_cannot_bridge_a_broken_streak(self):
+        today=date(2026,10,3)
+        class Result:
+            def __init__(self, one=None, many=None): self.one=one; self.many=many
+            def fetchone(self): return self.one
+            def fetchall(self): return self.many or []
+        class FakeConnection:
+            def __init__(self): self.saved=None
+            def execute(self,sql,params=()):
+                if "SELECT DISTINCT workout_date" in sql:
+                    self.asserted_filter="streak_eligible=TRUE" in sql
+                    # Oct 2 is a late-entered workout and must not bridge Oct 1 to Oct 3.
+                    return Result(many=[{"activity_date":today-timedelta(days=2)},
+                                        {"activity_date":today}])
+                if "SELECT current_date" in sql: return Result(one={"today":today})
+                if "INSERT INTO streaks" in sql: self.saved=params
+                return Result(one={"user_id":1})
+        conn=FakeConnection()
+        self.assertEqual(update_streak(conn,1),1)
+        self.assertTrue(conn.asserted_filter)
+        self.assertEqual(conn.saved,(1,1,1,today))
 
 if __name__=="__main__": unittest.main()
