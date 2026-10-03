@@ -23,10 +23,12 @@ class ExpTests(unittest.TestCase):
 
     def test_period_boundaries(self):
         self.assertEqual(activity_period(time(5,0)),"morning")
-        self.assertEqual(activity_period(time(11,59,59)),"morning")
-        self.assertIsNone(activity_period(time(12,0)))
+        self.assertEqual(activity_period(time(10,0)),"morning")
+        self.assertIsNone(activity_period(time(10,0,1)))
+        self.assertIsNone(activity_period(time(16,59,59)))
         self.assertEqual(activity_period(time(17,0)),"evening")
-        self.assertEqual(activity_period(time(23,59,59)),"evening")
+        self.assertEqual(activity_period(time(22,0)),"evening")
+        self.assertIsNone(activity_period(time(22,0,1)))
 
     def test_duplicate_period_award_is_ignored(self):
         class FakeConnection:
