@@ -174,7 +174,7 @@ async def _read_image(upload):
         return None,None
     image_bytes=await upload.read(MAX_IMAGE_BYTES+1)
     if len(image_bytes)>MAX_IMAGE_BYTES:
-        raise HTTPException(status_code=413,detail="Images must be 2 MB or smaller.")
+        raise HTTPException(status_code=413,detail="This image could not be uploaded.")
     mime_type=next((kind for kind,valid in IMAGE_TYPES.items() if valid(image_bytes)),None)
     if not mime_type:
         raise HTTPException(status_code=415,detail="Use a JPEG, PNG, or WebP image.")

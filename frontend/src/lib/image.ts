@@ -35,7 +35,7 @@ export async function prepareImage(file: File): Promise<File> {
       }
       scale *= 0.8;
     }
-    throw new Error('This image is still larger than 2 MB after compression. Choose a smaller image.');
+    throw new Error('This image could not be prepared for upload. Choose another image.');
   } finally {
     bitmap.close();
   }

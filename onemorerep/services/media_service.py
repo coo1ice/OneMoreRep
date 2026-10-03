@@ -22,7 +22,7 @@ def _supabase_storage():
 def store_image_file(image_bytes, mime_type):
     extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}.get(mime_type)
     if not extension or not image_bytes or len(image_bytes) > MAX_IMAGE_BYTES:
-        raise ValueError("Use a JPEG, PNG, or WebP image up to 2 MB.")
+        raise ValueError("Use a JPEG, PNG, or WebP image.")
     key = f"{uuid4().hex}.{extension}"
     bucket = _supabase_storage()
     if bucket:
