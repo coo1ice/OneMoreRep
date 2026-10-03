@@ -239,3 +239,14 @@ tbody tr:hover,.current-user-row{background:#22272E}
 @media(max-width:760px){.brand-logo{width:36px;height:36px;}}
 
 .feed-layout{grid-template-columns:minmax(0,1fr);max-width:900px;margin:0 auto;}
+
+/* Keep the workout type as a quiet inline details link, not a mini card. */
+.table-kind.detail-trigger{
+  display:inline-flex;align-items:center;gap:8px;padding:4px 0;
+  border:0;border-radius:0;background:transparent;color:var(--text);
+  font-size:inherit;font-weight:650;text-align:left;white-space:nowrap;
+}
+.table-kind.detail-trigger svg:first-child{color:var(--orange,#FF7A00);flex:0 0 auto}
+.table-kind.detail-trigger svg:last-child{color:var(--muted);transition:transform .15s ease,color .15s ease}
+.table-kind.detail-trigger:hover{background:transparent;border-color:transparent;color:var(--text)}
+.table-kind.detail-trigger:hover svg:last-child{color:var(--orange,#FF7A00);transform:translateX(2px)}
